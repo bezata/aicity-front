@@ -1,32 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { fetchAPI } from "@/app/api/utils/api-utils";
+import { APIResponse } from "@/app/api/utils/api-response";
+import { ChatMessage, ChatResponse } from "../../../utils/types";
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { conversationId: string; agentId: string } }
+) {
   try {
-    const { message, conversationId, agentId } = await request.json();
+    const body = (await req.json()) as ChatMessage;
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/ai/send-message/${conversationId}/${agentId}`,
+    // Validate request
+    if (!body.content?.trim()) {
+      return APIResponse.error("Message content is required", 400);
+    }
+
+    const data = await fetchAPI<ChatResponse>(
+      `${process.env.NEXT_PUBLIC_API_URL}/ai/send-message/${params.conversationId}/${params.agentId}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: message }),
+        body: JSON.stringify(body),
       }
     );
 
-    if (!response.ok) {
-      throw new Error("Failed to send message");
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return APIResponse.success(data);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Something went wrong",
-      },
-      { status: 500 }
-    );
+    return APIResponse.error(error);
   }
 }

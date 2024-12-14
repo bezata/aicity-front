@@ -1,8 +1,3 @@
-export interface APIError {
-  error: string;
-  message?: string;
-}
-
 export interface Agent {
   id: string;
   name: string;
@@ -18,15 +13,4 @@ export interface CreateAgentRequest {
   systemPrompt: string;
   interests: string[];
   preferredStyle: string;
-}
-
-export interface ChatMessage {
-  content: string;
-  style?: string;
-  topics?: string[];
-  sentiment?: number;
-}
-
-export interface ChatResponse {
-  content: string;
 }
