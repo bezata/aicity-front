@@ -1,39 +1,36 @@
-// app/api/agents/route.ts
-import { NextRequest } from "next/server";
-import { fetchAPI } from "../utils/api-utils";
-import { APIResponse } from "../utils/api-response";
-import { Agent, CreateAgentRequest } from "../utils/types";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const data = await fetchAPI<Agent[]>(
-      `${process.env.NEXT_PUBLIC_API_URL}/agents`
-    );
-    return APIResponse.success(data);
+    const res = await fetch(`${process.env.BACKEND_URL}/agents`);
+    const data = await res.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return APIResponse.error(error);
+    console.error("Failed to fetch agents:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch agents" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as CreateAgentRequest;
-
-    // Add validation here if needed
-    if (!body.name || !body.systemPrompt) {
-      return APIResponse.error("Missing required fields", 400);
-    }
-
-    const data = await fetchAPI<Agent>(
-      `${process.env.NEXT_PUBLIC_API_URL}/agents`,
+    const { agentId1, agentId2 } = await request.json();
+    const res = await fetch(
+      `${process.env.BACKEND_URL}/agents/interact/${agentId1}/${agentId2}`,
       {
         method: "POST",
-        body: JSON.stringify(body),
+        headers: { "Content-Type": "application/json" },
       }
     );
-
-    return APIResponse.success(data, 201);
+    const data = await res.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return APIResponse.error(error);
+    console.error("Failed to trigger agent interaction:", error);
+    return NextResponse.json(
+      { error: "Failed to trigger agent interaction" },
+      { status: 500 }
+    );
   }
 }

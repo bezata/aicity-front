@@ -1,16 +1,17 @@
 export interface Agent {
   id: string;
   name: string;
+  avatar: {
+    initial: string;
+    color: string;
+  };
   personality: string;
-  systemPrompt: string;
   interests: string[];
-  preferredStyle: string;
-}
-
-export interface CreateAgentRequest {
-  name: string;
-  personality: string;
   systemPrompt: string;
-  interests: string[];
   preferredStyle: string;
+  memoryWindowSize: number;
+  emotionalRange: {
+    min: number;
+    max: number;
+  };
 }
