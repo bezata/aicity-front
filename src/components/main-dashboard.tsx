@@ -86,7 +86,7 @@ export function MainDashboard() {
       />
 
       {/* Content */}
-      <div className="relative ">
+      <div className="relative">
         {/* Header */}
         <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
           <div className="container py-6">

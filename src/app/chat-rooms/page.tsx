@@ -1,5 +1,10 @@
 import DistrictDashboard from "@/components/district-dashboard";
+import { MainLayout } from "@/components/main-layout";
 
 export default function DistrictsPage() {
-  return <DistrictDashboard />;
+  return (
+    <MainLayout>
+      <DistrictDashboard />
+    </MainLayout>
+  );
 }

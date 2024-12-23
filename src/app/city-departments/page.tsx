@@ -1,5 +1,10 @@
 import DepartmentDashboard from "@/components/department-dashboard";
+import { MainLayout } from "@/components/main-layout";
 
 export default function CityDepartments() {
-  return <DepartmentDashboard />;
+  return (
+    <MainLayout>
+      <DepartmentDashboard />
+    </MainLayout>
+  );
 }
