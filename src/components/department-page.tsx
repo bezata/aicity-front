@@ -132,7 +132,6 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                   <Progress
                     value={department.stats.efficiency}
                     className="h-1 bg-purple-500/10"
-                    indicatorClassName="bg-purple-500"
                   />
                 </div>
               </div>
@@ -168,7 +167,6 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                       100
                     }
                     className="h-2 bg-purple-500/10"
-                    indicatorClassName="bg-purple-500"
                   />
                   <div className="flex items-center justify-between text-sm text-purple-300/50">
                     <span>
