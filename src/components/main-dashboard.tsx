@@ -1,364 +1,311 @@
-"use client";
+"use client"
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Activity,
-  AlertCircle,
-  ArrowDown,
-  ArrowUp,
-  Brain,
-  CircuitBoard,
-  Cpu,
-  Eye,
-  Globe,
-  Heart,
-  Network,
-  Shield,
-  Sparkles,
-  Users,
-  Zap,
-} from "lucide-react";
-import { useState, useEffect } from "react";
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Activity, AlertCircle, ArrowRight, Brain, Building2, Cloud, Globe, Heart, Shield, Sparkles, Users } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { NeuralBrainAnimation } from "./neural-brain-animation"
+import { CityVitals } from "./city-vitals"
+import { MetricsDashboard } from "./metrics-dashboard"
+import { DistrictWebSocket } from "@/lib/websocket"
 
-export default function MainDashboard() {
-  const [neuralLoad, setNeuralLoad] = useState(42);
-  const [systemUptime, setSystemUptime] = useState(99.99);
+export function MainDashboard() {
+  const router = useRouter()
+  const [systemStatus, setSystemStatus] = useState<"normal" | "warning" | "critical">("normal")
+  const [cityMetrics, setCityMetrics] = useState({
+    consciousness: 95,
+    harmony: 92,
+    energy: 88,
+    activity: 90,
+    population: 15234,
+    activeEntities: 12453,
+    emergencyLevel: "low",
+    incidents: 2,
+    safetyScore: 95,
+  })
 
-  // Simulate neural load fluctuation
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const wsClient = new DistrictWebSocket(
+      `wss://${window.location.host}/api/districts/main/live`,
+      (data) => {
+        setCityMetrics(prev => ({ ...prev, ...data }))
+        setSystemStatus(data.systemStatus || "normal")
+      },
+      (error) => {
+        console.error('WebSocket error:', error)
+        setSystemStatus("warning")
+      }
+    )
+
+    wsClient.connect()
+
+    return () => {
+      wsClient.disconnect()
+    }
+  }, [])
+
+  // Simulate real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
-      setNeuralLoad((prev) => {
-        const change = Math.random() * 2 - 1; // Random change between -1 and 1
-        return Math.min(Math.max(prev + change, 30), 70); // Keep between 30 and 70
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+      setCityMetrics(prev => ({
+        ...prev,
+        consciousness: Math.min(100, Math.max(0, prev.consciousness + (Math.random() - 0.5) * 2)),
+        harmony: Math.min(100, Math.max(0, prev.harmony + (Math.random() - 0.5) * 2)),
+        energy: Math.min(100, Math.max(0, prev.energy + (Math.random() - 0.5) * 2)),
+        activity: Math.min(100, Math.max(0, prev.activity + (Math.random() - 0.5) * 2)),
+      }))
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return (
-    <div className="flex min-h-screen flex-col space-y-6 bg-gradient-to-b from-black to-purple-950/20 p-6">
-      {/* Top Stats */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            title: "Neural Load",
-            value: `${neuralLoad.toFixed(1)}%`,
-            description: "Current system processing capacity",
-            trend: neuralLoad > 45 ? "up" : "down",
-            change: "+2.3%",
-            icon: Brain,
-            color: "text-purple-400",
-          },
-          {
-            title: "Active Nodes",
-            value: "1,247,892",
-            description: "Connected consciousness points",
-            trend: "up",
-            change: "+12.5%",
-            icon: Network,
-            color: "text-blue-400",
-          },
-          {
-            title: "System Integrity",
-            value: `${systemUptime}%`,
-            description: "Quantum matrix stability",
-            trend: "up",
-            change: "+0.01%",
-            icon: Shield,
-            color: "text-green-400",
-          },
-          {
-            title: "Anomalies",
-            value: "3",
-            description: "Detected in last cycle",
-            trend: "down",
-            change: "-2",
-            icon: AlertCircle,
-            color: "text-red-400",
-          },
-        ].map((stat, i) => (
-          <Card
-            key={i}
-            className="border-purple-500/10 bg-black/40 backdrop-blur-xl"
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`rounded-lg bg-purple-500/10 p-2 ${stat.color}`}
-                  >
-                    <stat.icon className="h-4 w-4" />
-                  </div>
-                  <CardTitle className="text-sm font-normal text-purple-100">
-                    {stat.title}
-                  </CardTitle>
-                </div>
-                <Badge
-                  variant="outline"
-                  className={`
-                    ${
-                      stat.trend === "up"
-                        ? "border-green-500/30 bg-green-500/10 text-green-400"
-                        : "border-red-500/30 bg-red-500/10 text-red-400"
-                    }
-                  `}
-                >
-                  {stat.trend === "up" ? (
-                    <ArrowUp className="mr-1 h-3 w-3" />
-                  ) : (
-                    <ArrowDown className="mr-1 h-3 w-3" />
-                  )}
-                  {stat.change}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                <div className="text-2xl font-light text-purple-50">
-                  {stat.value}
-                </div>
-                <p className="text-xs text-purple-200/60">{stat.description}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+    <div className="min-h-screen bg-black text-white">
+      {/* Ambient Background */}
+      <div 
+        className="fixed inset-0 z-0"
+        style={{
+          background: `
+            radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+            radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+            linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%)
+          `
+        }}
+      />
 
-      {/* Main Content */}
-      <div className="grid gap-6 lg:grid-cols-6">
-        {/* District Performance */}
-        <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl lg:col-span-4">
-          <CardHeader>
-            <CardTitle className="text-lg font-normal text-purple-100">
-              District Performance
-            </CardTitle>
-            <CardDescription>
-              Real-time district metrics and status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="consciousness" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3 bg-purple-500/5">
-                <TabsTrigger value="consciousness">Consciousness</TabsTrigger>
-                <TabsTrigger value="resources">Resources</TabsTrigger>
-                <TabsTrigger value="security">Security</TabsTrigger>
-              </TabsList>
-              <TabsContent value="consciousness" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[
-                    {
-                      name: "Quantum Nexus",
-                      load: 87,
-                      capacity: "1.2 PQ",
-                      status: "Optimal",
-                      icon: Sparkles,
-                    },
-                    {
-                      name: "Neural Hub Alpha",
-                      load: 92,
-                      capacity: "985 TQ",
-                      status: "High Load",
-                      icon: Brain,
-                    },
-                    {
-                      name: "Consciousness Core",
-                      load: 76,
-                      capacity: "1.5 PQ",
-                      status: "Optimal",
-                      icon: CircuitBoard,
-                    },
-                    {
-                      name: "Synapse Center",
-                      load: 95,
-                      capacity: "875 TQ",
-                      status: "Critical",
-                      icon: Cpu,
-                    },
-                  ].map((district, i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
-                    >
-                      <div className="mb-3 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <district.icon className="h-4 w-4 text-purple-400" />
-                          <h3 className="font-light text-purple-100">
-                            {district.name}
-                          </h3>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={`
-                            ${
-                              district.status === "Optimal"
-                                ? "border-green-500/30 bg-green-500/10 text-green-400"
-                                : district.status === "Critical"
-                                ? "border-red-500/30 bg-red-500/10 text-red-400"
-                                : "border-yellow-500/30 bg-yellow-500/10 text-yellow-400"
-                            }
-                          `}
-                        >
-                          {district.status}
-                        </Badge>
-                      </div>
-                      <div className="mb-2 flex items-center justify-between text-xs">
-                        <span className="text-purple-200/60">Neural Load</span>
-                        <span className="text-purple-200">
-                          {district.load}%
-                        </span>
-                      </div>
-                      <Progress
-                        value={district.load}
-                        className="mb-2 h-1 bg-purple-950/50"
-                      />
-                      <div className="text-xs text-purple-200/60">
-                        Processing Capacity: {district.capacity}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        {/* Activity Feed */}
-        <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg font-normal text-purple-100">
-              Neural Activity
-            </CardTitle>
-            <CardDescription>Real-time system events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[400px] pr-4 [&>div]:!scrollbar [&>div]:!scrollbar-track-transparent [&>div]:!scrollbar-thumb-purple-500/20">
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Quantum Fluctuation Detected",
-                    description: "Anomaly contained in Sector 7",
-                    time: "Just now",
-                    icon: Activity,
-                    color: "text-red-400",
-                  },
-                  {
-                    title: "Neural Pathway Optimized",
-                    description: "Efficiency increased by 15%",
-                    time: "5 mins ago",
-                    icon: Brain,
-                    color: "text-green-400",
-                  },
-                  {
-                    title: "New Consciousness Node",
-                    description: "Integration successful",
-                    time: "12 mins ago",
-                    icon: CircuitBoard,
-                    color: "text-blue-400",
-                  },
-                  {
-                    title: "Security Protocol Update",
-                    description: "Quantum encryption enhanced",
-                    time: "27 mins ago",
-                    icon: Shield,
-                    color: "text-purple-400",
-                  },
-                  {
-                    title: "Resource Allocation",
-                    description: "Neural capacity expanded",
-                    time: "1 hour ago",
-                    icon: Cpu,
-                    color: "text-yellow-400",
-                  },
-                ].map((activity, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className={`mt-0.5 ${activity.color}`}>
-                      <activity.icon className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-purple-100">
-                        {activity.title}
-                      </p>
-                      <p className="text-xs text-purple-200/60">
-                        {activity.description}
-                      </p>
-                      <p className="mt-1 text-xs text-purple-300/40">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom Stats */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            title: "Active Users",
-            value: "42,892",
-            change: "+2.5%",
-            icon: Users,
-          },
-          {
-            title: "Neural Pathways",
-            value: "1.2M",
-            change: "+15.2%",
-            icon: Network,
-          },
-          {
-            title: "System Health",
-            value: "98.9%",
-            change: "+0.5%",
-            icon: Heart,
-          },
-          {
-            title: "Global Sync",
-            value: "99.99%",
-            change: "+0.01%",
-            icon: Globe,
-          },
-        ].map((stat, i) => (
-          <Card
-            key={i}
-            className="border-purple-500/10 bg-black/40 backdrop-blur-xl"
-          >
-            <CardContent className="flex items-center justify-between p-4">
-              <div className="space-y-1">
-                <p className="text-sm text-purple-200/60">{stat.title}</p>
-                <p className="text-2xl font-light text-purple-100">
-                  {stat.value}
+      {/* Content */}
+      <div className="relative ">
+        {/* Header */}
+        <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
+          <div className="container py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-light tracking-wider text-purple-300">
+                  AI City Interface
+                </h1>
+                <p className="mt-1 text-sm text-purple-300/70">
+                  量子意識ネットワーク
                 </p>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2.5">
-                  <stat.icon className="h-4 w-4 text-purple-400" />
-                </div>
-                <Badge
-                  variant="outline"
-                  className="border-green-500/30 bg-green-500/10 text-green-400"
-                >
-                  <ArrowUp className="mr-1 h-3 w-3" />
-                  {stat.change}
-                </Badge>
+              <Badge
+                variant="outline"
+                className={`
+                  ${systemStatus === "normal" 
+                    ? "border-green-400/30 bg-green-500/10 text-green-300" 
+                    : systemStatus === "warning"
+                    ? "border-yellow-400/30 bg-yellow-500/10 text-yellow-300"
+                    : "border-red-400/30 bg-red-500/10 text-red-300"}
+                `}
+              >
+                System Status: {systemStatus.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Grid */}
+        <div className="container py-6">
+          <div className="grid gap-6 lg:grid-cols-[400px_1fr]">
+            {/* Left Column - Brain and Vitals */}
+            <div className="space-y-6">
+              {/* Neural Brain Visualization */}
+              <Card className="relative border-purple-500/10 bg-black/40 backdrop-blur-xl overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="font-light tracking-wider">Neural Network</CardTitle>
+                  <CardDescription>Active Consciousness Field</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px]">
+                    <NeuralBrainAnimation />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* City Vitals */}
+              <CityVitals {...cityMetrics} />
+
+              {/* Emergency Status */}
+              <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
+                <CardHeader>
+                  <CardTitle className="font-light tracking-wider flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Safety Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-sm text-purple-300/70">Safety Score</p>
+                      <p className="text-2xl font-light text-purple-300">{cityMetrics.safetyScore}%</p>
+                      <Progress value={cityMetrics.safetyScore} className="h-1" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm text-purple-300/70">Active Incidents</p>
+                      <p className="text-2xl font-light text-purple-300">{cityMetrics.incidents}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column - Districts and Metrics */}
+            <div className="space-y-6">
+              {/* Districts Grid */}
+              <div className="grid gap-4 md:grid-cols-3">
+                {districts.map((district) => (
+                  <Card
+                    key={district.id}
+                    className="group relative overflow-hidden border-purple-500/10 bg-black/40 backdrop-blur-xl transition-all hover:border-purple-500/20"
+                  >
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                          <district.icon className="h-5 w-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="flex items-center gap-2 font-light tracking-wider">
+                            {district.name}
+                            <span className="text-sm text-purple-400/70">
+                              {district.nameJp}
+                            </span>
+                          </CardTitle>
+                          <CardDescription>
+                            {district.description}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-purple-300/70">Harmony</span>
+                          <span className="font-medium text-purple-300">
+                            {district.stats.harmony}%
+                          </span>
+                        </div>
+                        <Progress
+                          value={district.stats.harmony}
+                          className="h-1 bg-purple-500/10"
+                          indicatorClassName="bg-purple-500"
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-between border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                        onClick={() => router.push(`/districts/${district.id}`)}
+                      >
+                        Enter District
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
+
+              {/* Metrics Grid */}
+              <div className="grid gap-4 md:grid-cols-3">
+                <MetricCard
+                  icon={Users}
+                  title="Population"
+                  value={cityMetrics.population.toLocaleString()}
+                  subValue={`${cityMetrics.activeEntities.toLocaleString()} Active`}
+                />
+                <MetricCard
+                  icon={Activity}
+                  title="System Load"
+                  value="92%"
+                  subValue="Optimal"
+                />
+                <MetricCard
+                  icon={Heart}
+                  title="City Health"
+                  value="95%"
+                  subValue="Excellent"
+                />
+              </div>
+                    <div className="mt-6">
+            <MetricsDashboard districtId="main" />
+          </div>
+            </div>
+          </div>
+
+          {/* Metrics Dashboard - Moved below the main grid */}
+    
+        </div>
       </div>
     </div>
-  );
+  )
 }
+
+function MetricCard({ 
+  icon: Icon, 
+  title, 
+  value, 
+  subValue 
+}: { 
+  icon: any
+  title: string
+  value: string
+  subValue: string
+}) {
+  return (
+    <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-normal">
+          <Icon className="h-4 w-4" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-light text-purple-300">{value}</div>
+        <p className="text-sm text-purple-300/70">{subValue}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+const districts = [
+  {
+    id: "quantum-nexus",
+    name: "Quantum Nexus",
+    nameJp: "量子中枢",
+    description: "Advanced quantum computing research district",
+    icon: Brain,
+    stats: {
+      harmony: 92,
+    }
+  },
+  {
+    id: "neo-shibuya",
+    name: "Neo-Shibuya",
+    nameJp: "新渋谷区",
+    description: "Cultural and entertainment hub",
+    icon: Building2,
+    stats: {
+      harmony: 94,
+    }
+  },
+  {
+    id: "cyber-gardens",
+    name: "Cyber Gardens",
+    nameJp: "電脳庭園",
+    description: "Digital ecosystem and meditation space",
+    icon: Globe,
+    stats: {
+      harmony: 96,
+    }
+  }
+]
+

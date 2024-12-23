@@ -4,21 +4,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { UserNav } from "@/components/user-nav";
-import { AlertCircle, Brain } from "lucide-react";
+import { AlertCircle, Brain, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const navItems = [
   { name: "Overview", href: "/" },
-  { name: "Districts", href: "/chat-rooms" },
+  { name: "Districts", href: "/districts" },
   { name: "Chronicles", href: "/chronicles" },
-  { name: "City Departments", href: "/city-departments" },
+  { name: "City Departments", href: "/departments" },
   { name: "Resources", href: "/resources" },
   { name: "Communications", href: "/communications" },
 ];
 
 export function TopNav() {
   const pathname = usePathname();
+  const [balance, setBalance] = useState(0);
+  const [isConnected, setIsConnected] = useState(true);
+
+  const handleConnect = () => {
+    setIsConnected(true);
+    // Simulate getting a balance
+    setBalance(1000);
+  };
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-white/5 bg-black/50 px-4 backdrop-blur-xl">
@@ -77,26 +86,58 @@ export function TopNav() {
         </nav>
 
         <div className="flex items-center gap-4">
+          {/* Credits & Wallet Section */}
           <div className="hidden items-center gap-4 lg:flex">
-            <div className="text-sm">
-              <div className="text-purple-300">System Status: Optimal</div>
-              <div className="text-purple-300/70">Cycle 2749.3</div>
-            </div>
-            <Separator orientation="vertical" className="h-8 bg-white/5" />
-            <div className="text-sm">
-              <div className="text-purple-300">Neural Load: 42.3%</div>
-              <div className="text-purple-300/70">+2.1% from last cycle</div>
-            </div>
-            <Separator orientation="vertical" className="h-8 bg-white/5" />
+            {isConnected && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm">
+                    <div className="font-mono text-purple-300">
+                      <span className="text-purple-400/70 ">$AIC:</span>{" "}
+                      {balance.toLocaleString()}
+                    </div>
+                    {balance === 0 && (
+                      <Link href="/buy-credits">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="relative -ml-2 h-7 gap-2 border border-purple-500/10 bg-purple-500/5 px-2 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
+                        >
+                          <span className="relative">
+                            <span className="relative">+</span>
+                          </span>
+                          Buy Credits
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                <Separator orientation="vertical" className="h-8 bg-white/5" />
+              </>
+            )}
           </div>
-          <Button variant="ghost" size="icon" className="relative">
-            <AlertCircle className="h-5 w-5 text-purple-400" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-purple-600 text-[10px]">
-              3
-            </span>
-          </Button>
-          <Separator orientation="vertical" className="h-8 bg-white/5" />
-          <UserNav />
+
+          {/* Connect Wallet Button */}
+          {!isConnected ? (
+            <Link href="/connect">
+              <Button
+                variant="ghost"
+                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              >
+                <Wallet className="h-4 w-4" />
+                <span className="hidden sm:inline">Connect Wallet</span>
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              variant="ghost"
+              className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              onClick={handleConnect}
+            >
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Connected</span>
+            </Button>
+          )}
         </div>
       </div>
     </header>

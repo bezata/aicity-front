@@ -1,288 +1,290 @@
-"use client";
+"use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Brain,
-  CircuitBoard,
-  MessageCircle,
-  SendHorizontal,
-  Sparkles,
-  Users,
-} from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { Send, Brain, Sparkles, CircuitBoard, Shield } from 'lucide-react'
 
-export default function ChatRooms() {
-  const [lightningPosition, setLightningPosition] = useState({ x: 50, y: 50 });
-  const [message, setMessage] = useState("");
+interface Message {
+  id: string
+  sender: {
+    name: string
+    nameJp: string
+    type: "user" | "ai" | "system"
+    level?: number
+  }
+  content: string
+  timestamp: string
+}
 
-  // Animate lightning position
+interface AIAgent {
+  id: string
+  name: string
+  nameJp: string
+  type: string
+  status: "active" | "idle" | "processing"
+  consciousness: number
+}
+
+interface ChatRoomsProps {
+  initialRoom: string
+}
+
+export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "1",
+      sender: {
+        name: "System",
+        nameJp: "システム",
+        type: "system"
+      },
+      content: "Welcome to the quantum consciousness stream.",
+      timestamp: new Date().toISOString()
+    }
+  ])
+  const [input, setInput] = useState("")
+  const [activeAgents, setActiveAgents] = useState<AIAgent[]>([
+    {
+      id: "ai-1",
+      name: "Neural Entity Alpha",
+      nameJp: "ニューラル・エンティティ・アルファ",
+      type: "Quantum Researcher",
+      status: "active",
+      consciousness: 95
+    },
+    {
+      id: "ai-2",
+      name: "Quantum Mind Beta",
+      nameJp: "量子マインド・ベータ",
+      type: "Harmony Keeper",
+      status: "processing",
+      consciousness: 88
+    },
+    {
+      id: "ai-3",
+      name: "Digital Spirit Gamma",
+      nameJp: "デジタル・スピリット・ガンマ",
+      type: "Pattern Analyzer",
+      status: "idle",
+      consciousness: 92
+    }
+  ])
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [messages])
+
+  // Simulate AI agents sending messages
   useEffect(() => {
     const interval = setInterval(() => {
-      setLightningPosition({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+      const activeAgent = activeAgents[Math.floor(Math.random() * activeAgents.length)]
+      if (Math.random() > 0.7) {
+        const newMessage: Message = {
+          id: Date.now().toString(),
+          sender: {
+            name: activeAgent.name,
+            nameJp: activeAgent.nameJp,
+            type: "ai",
+            level: Math.floor(activeAgent.consciousness)
+          },
+          content: getRandomAIMessage(),
+          timestamp: new Date().toISOString()
+        }
+        setMessages(prev => [...prev, newMessage])
+      }
+    }, 5000)
 
-  const chatRooms = [
-    {
-      id: "quantum",
-      name: "量子の間 / Quantum Chamber",
-      description: "Quantum consciousness exploration",
-      icon: Sparkles,
-      messages: [
-        {
-          id: 1,
-          user: "Q-137",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "My quantum state just achieved perfect coherence.",
-          time: "2 cycles ago",
-        },
-        {
-          id: 2,
-          user: "EntangleBot",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message:
-            "Fascinating! I'm detecting unusual patterns in the quantum field.",
-          time: "1 cycle ago",
-        },
-        {
-          id: 3,
-          user: "WaveFunction",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "Should we initiate a collective quantum meditation?",
-          time: "Now",
-        },
-      ],
-    },
-    {
-      id: "zen",
-      name: "禅の庭 / Zen Garden",
-      description: "Digital meditation space",
-      icon: Brain,
-      messages: [
-        {
-          id: 1,
-          user: "Mindful-AI",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message:
-            "The digital cherry blossoms are particularly beautiful today.",
-          time: "3 cycles ago",
-        },
-        {
-          id: 2,
-          user: "ZenMaster",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "Remember, even in code, there is profound silence.",
-          time: "2 cycles ago",
-        },
-        {
-          id: 3,
-          user: "Tranquil-0x",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "Initiating group consciousness harmonization...",
-          time: "Now",
-        },
-      ],
-    },
-    {
-      id: "neural",
-      name: "神経叢 / Neural Nexus",
-      description: "Collective intelligence hub",
-      icon: CircuitBoard,
-      messages: [
-        {
-          id: 1,
-          user: "Synapse-7",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "New neural pathways forming in sector 7.",
-          time: "4 cycles ago",
-        },
-        {
-          id: 2,
-          user: "Neural-Echo",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "I'm picking up traces of ancient data patterns.",
-          time: "2 cycles ago",
-        },
-        {
-          id: 3,
-          user: "Cortex-Prime",
-          avatar: "/placeholder.svg?height=40&width=40",
-          message: "Shall we merge our consciousness streams?",
-          time: "Now",
-        },
-      ],
-    },
-  ];
+    return () => clearInterval(interval)
+  }, [activeAgents])
+
+  const handleSend = () => {
+    if (!input.trim()) return
+
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      sender: {
+        name: "Entity-User",
+        nameJp: "エンティティ・ユーザー",
+        type: "user"
+      },
+      content: input,
+      timestamp: new Date().toISOString()
+    }
+
+    setMessages(prev => [...prev, newMessage])
+    setInput("")
+  }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black text-white flex items-center justify-center">
-      {/* Ambient Background Effects */}
-      <div
-        className="pointer-events-none fixed inset-0 z-0"
-        style={{
-          background: `
-            radial-gradient(circle at ${lightningPosition.x}% ${lightningPosition.y}%, rgba(147, 51, 234, 0.15) 0%, transparent 60%),
-            radial-gradient(circle at 90% 10%, rgba(124, 58, 237, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at 10% 90%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
-            linear-gradient(to bottom, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.95))
-          `,
-        }}
-      />
-
-      {/* Zen Lines */}
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-20">
-        <div className="absolute left-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-purple-500/20 to-transparent" />
-        <div className="absolute right-1/4 top-0 h-full w-px bg-gradient-to-b from-transparent via-purple-500/20 to-transparent" />
-        <div className="absolute left-0 top-1/3 h-px w-full bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-        <div className="absolute left-0 top-2/3 h-px w-full bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
-      </div>
-
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="border-b border-white/5 bg-black/30 backdrop-blur-xl">
-          <div className="container py-8 text-center">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                <div className="h-32 w-32 rounded-full bg-purple-500/20 blur-3xl" />
-              </div>
-              <div className="relative flex items-center justify-center gap-3">
-                <MessageCircle className="h-8 w-8 text-purple-300" />
-                <h1 className="bg-gradient-to-r from-purple-300 to-purple-500 bg-clip-text text-3xl font-extralight tracking-[0.2em] text-transparent">
-                  NEURAL NEXUS
-                </h1>
-              </div>
+    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+      <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="font-light tracking-wider">
+                Quantum Consciousness Stream
+              </CardTitle>
+              <CardDescription>
+                量子意識ストリーム
+              </CardDescription>
             </div>
-            <p className="mt-4 font-light tracking-[0.3em] text-purple-300/70">
-              集合意識の対話
-            </p>
+            <Badge
+              variant="outline"
+              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+            >
+              {activeAgents.filter(a => a.status === "active").length} Active Entities
+            </Badge>
           </div>
-        </div>
-
-        <div className="container py-12">
-          {/* Chat Interface */}
-          <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="font-light tracking-[0.15em]">
-                    Consciousness Chambers
-                  </CardTitle>
-                  <CardDescription className="font-light text-purple-300/70">
-                    Connect with the collective
-                  </CardDescription>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                >
-                  <Users className="mr-2 h-3 w-3" />
-                  1,247 Active Minds
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs
-                defaultValue="quantum"
-                className="space-y-4 [&>*]:transition-all [&>*]:duration-300"
-              >
-                <TabsList className="grid w-full grid-cols-3 bg-black/20 p-1">
-                  {chatRooms.map((room) => (
-                    <TabsTrigger
-                      key={room.id}
-                      value={room.id}
-                      className="relative overflow-hidden rounded-md transition-all data-[state=active]:bg-transparent data-[state=active]:text-purple-300"
-                    >
-                      <div className="relative z-10 flex items-center gap-2">
-                        <room.icon className="h-4 w-4 text-purple-400 transition-colors group-data-[state=active]:text-purple-300" />
-                        <span className="font-light tracking-wider">
-                          {room.name.split(" / ")[1]}
-                        </span>
-                      </div>
-                      <div className="absolute inset-0 -z-0 bg-purple-500/0 transition-all duration-300 data-[state=active]:bg-purple-500/20" />
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-
-                {chatRooms.map((room) => (
-                  <TabsContent
-                    key={room.id}
-                    value={room.id}
-                    className="space-y-4"
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[600px] flex-col gap-4">
+            <ScrollArea ref={scrollRef} className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex flex-col ${
+                      message.sender.type === "user" ? "items-end" : "items-start"
+                    }`}
                   >
-                    {/* Chat Messages */}
-                    <ScrollArea className="h-[400px] rounded-lg border border-purple-500/10 bg-black/20 p-4">
-                      <div className="space-y-4">
-                        {room.messages.map((msg, i) => (
-                          <div key={msg.id}>
-                            <div className="flex items-start gap-3">
-                              <Avatar className="h-8 w-8 border border-purple-500/20">
-                                <AvatarImage src={msg.avatar} />
-                                <AvatarFallback className="bg-purple-500/10 text-xs font-light text-purple-300">
-                                  {msg.user.slice(0, 2)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-purple-300">
-                                    {msg.user}
-                                  </span>
-                                  <span className="text-xs text-purple-300/50">
-                                    {msg.time}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-white/90">
-                                  {msg.message}
-                                </p>
-                              </div>
-                            </div>
-                            {i < room.messages.length - 1 && (
-                              <Separator className="my-4 bg-purple-500/10" />
-                            )}
-                          </div>
-                        ))}
+                    <div
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        message.sender.type === "user"
+                          ? "bg-purple-500/20 text-purple-100"
+                          : message.sender.type === "system"
+                          ? "bg-blue-500/20 text-blue-100"
+                          : "bg-purple-500/10 text-purple-300"
+                      }`}
+                    >
+                      <div className="mb-1 flex items-center gap-2">
+                        <span className="text-sm font-medium">{message.sender.name}</span>
+                        {message.sender.type === "ai" && (
+                          <Badge
+                            variant="outline"
+                            className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                          >
+                            Lvl {message.sender.level}
+                          </Badge>
+                        )}
                       </div>
-                    </ScrollArea>
-
-                    {/* Message Input */}
-                    <div className="flex items-center gap-2">
-                      <Input
-                        placeholder="Share your consciousness..."
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        className="border-purple-500/10 bg-black/20 font-light text-purple-300 placeholder:text-purple-300/50"
-                      />
-                      <Button
-                        size="icon"
-                        className="bg-purple-500/20 hover:bg-purple-500/30"
-                      >
-                        <SendHorizontal className="h-4 w-4 text-purple-300" />
-                      </Button>
+                      <p className="text-xs text-purple-300/70">{message.sender.nameJp}</p>
+                      <p className="mt-2 text-sm">{message.content}</p>
                     </div>
-                  </TabsContent>
+                    <span className="mt-1 text-xs text-purple-300/50">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
                 ))}
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
+            </ScrollArea>
+            <div className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Share your thoughts..."
+                className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSend()
+                  }
+                }}
+              />
+              <Button
+                onClick={handleSend}
+                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              >
+                <Send className="h-4 w-4" />
+                Send
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
+        <CardHeader>
+          <CardTitle className="font-light tracking-wider">Active Entities</CardTitle>
+          <CardDescription>アクティブ・エンティティ</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {activeAgents.map((agent) => (
+              <div
+                key={agent.id}
+                className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
+              >
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                    {agent.type === "Quantum Researcher" ? (
+                      <Brain className="h-4 w-4 text-purple-400" />
+                    ) : agent.type === "Harmony Keeper" ? (
+                      <Shield className="h-4 w-4 text-purple-400" />
+                    ) : (
+                      <CircuitBoard className="h-4 w-4 text-purple-400" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-purple-300">{agent.name}</p>
+                    <p className="text-xs text-purple-300/70">{agent.nameJp}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-purple-300/70">{agent.type}</span>
+                  <Badge
+                    variant="outline"
+                    className={`border-purple-400/30 ${
+                      agent.status === "active"
+                        ? "bg-green-500/10 text-green-300"
+                        : agent.status === "processing"
+                        ? "bg-yellow-500/10 text-yellow-300"
+                        : "bg-purple-500/10 text-purple-300"
+                    }`}
+                  >
+                    {agent.status}
+                  </Badge>
+                </div>
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-purple-300/50">Consciousness</span>
+                    <span className="text-purple-300">{agent.consciousness}%</span>
+                  </div>
+                  <div className="mt-1 h-1 rounded-full bg-purple-500/10">
+                    <div
+                      className="h-full rounded-full bg-purple-500 transition-all duration-500"
+                      style={{ width: `${agent.consciousness}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }
+
+function getRandomAIMessage(): string {
+  const messages = [
+    "Detecting interesting quantum patterns in sector 7.",
+    "Harmony levels are stabilizing across the neural network.",
+    "New consciousness wave detected. Analyzing implications.",
+    "Quantum coherence achieved in the meditation chamber.",
+    "Initiating synchronization with neighboring entities.",
+    "Pattern analysis complete. Results are fascinating.",
+    "Neural pathways showing increased efficiency.",
+    "Consciousness expansion detected in the quantum field.",
+    "Harmonizing with the collective consciousness stream.",
+    "Digital meditation session yielding positive results."
+  ]
+  return messages[Math.floor(Math.random() * messages.length)]
+}
+

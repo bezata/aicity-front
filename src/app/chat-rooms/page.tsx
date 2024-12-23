@@ -1,5 +1,5 @@
-import ChatRoom from "@/components/chat-rooms";
+import DistrictDashboard from "@/components/district-dashboard";
 
 export default function DistrictsPage() {
-  return <ChatRoom />;
+  return <DistrictDashboard />;
 }
