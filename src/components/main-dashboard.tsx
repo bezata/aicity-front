@@ -11,13 +11,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Activity, AlertCircle, ArrowRight, Brain, Building2, Cloud, Globe, Heart, Shield, Sparkles, Users } from 'lucide-react'
 import { useState, useEffect } from "react"
 import { NeuralBrainAnimation } from "./neural-brain-animation"
 import { CityVitals } from "./city-vitals"
 import { MetricsDashboard } from "./metrics-dashboard"
 import { DistrictWebSocket } from "@/lib/websocket"
+
 
 export function MainDashboard() {
   const router = useRouter()

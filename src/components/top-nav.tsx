@@ -1,13 +1,18 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { UserNav } from "@/components/user-nav";
-import { AlertCircle, Brain, Wallet } from "lucide-react";
+import { Brain, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  Connection,
+  clusterApiUrl,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
+import { useAppKit } from "@reown/appkit/react";
 
 const navItems = [
   { name: "Overview", href: "/" },
@@ -19,14 +24,59 @@ const navItems = [
 ];
 
 export function TopNav() {
+  const { open } = useAppKit();
   const pathname = usePathname();
   const [balance, setBalance] = useState(0);
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    const { solana } = window as any;
+    if (solana) {
+      solana.on("connect", () => {
+        setIsConnected(true);
+        setWalletAddress(solana.publicKey?.toString());
+
+        // Get balance
+        const connection = new Connection(clusterApiUrl("devnet"));
+        connection
+          .getBalance(solana.publicKey)
+          .then((bal) => setBalance(bal / LAMPORTS_PER_SOL))
+          .catch((err) => {
+            console.error("Error getting balance:", err);
+            setBalance(0);
+          });
+      });
+
+      solana.on("disconnect", () => {
+        setIsConnected(false);
+        setWalletAddress(undefined);
+        setBalance(0);
+      });
+
+      // Check if already connected
+      if (solana.isConnected) {
+        setIsConnected(true);
+        setWalletAddress(solana.publicKey?.toString());
+      }
+    }
+
+    return () => {
+      if (solana) {
+        solana.removeAllListeners("connect");
+        solana.removeAllListeners("disconnect");
+      }
+    };
+  }, []);
 
   const handleConnect = () => {
-    setIsConnected(true);
-    // Simulate getting a balance
-    setBalance(1000);
+    open();
+  };
+
+  const handleAccountView = () => {
+    open();
   };
 
   return (
@@ -88,7 +138,7 @@ export function TopNav() {
         <div className="flex items-center gap-4">
           {/* Credits & Wallet Section */}
           <div className="hidden items-center gap-4 lg:flex">
-            {isConnected && (
+            {isConnected && walletAddress && (
               <>
                 <div className="flex items-center gap-2">
                   <div className="text-sm">
@@ -119,20 +169,19 @@ export function TopNav() {
 
           {/* Connect Wallet Button */}
           {!isConnected ? (
-            <Link href="/connect">
-              <Button
-                variant="ghost"
-                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              >
-                <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Connect Wallet</span>
-              </Button>
-            </Link>
-          ) : (
             <Button
               variant="ghost"
               className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
               onClick={handleConnect}
+            >
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Connect Wallet</span>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              onClick={handleAccountView}
             >
               <Wallet className="h-4 w-4" />
               <span className="hidden sm:inline">Connected</span>

@@ -1,25 +1,44 @@
-import type { Metadata } from "next"
-import { Inter } from 'next/font/google'
-import "./globals.css"
+"use client";
 
-const inter = Inter({ subsets: ["latin"] })
+import "./globals.css";
+import { createAppKit } from "@reown/appkit/react";
+import { SolanaAdapter } from "@reown/appkit-adapter-solana/react";
+import { solana, solanaTestnet, solanaDevnet } from "@reown/appkit/networks";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
 
-export const metadata: Metadata = {
-  title: "AI City Interface",
-  description: "Neural network of consciousness in the digital realm",
-}
+const solanaWeb3JsAdapter = new SolanaAdapter({
+  wallets: [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+});
+const projectId = "0cdaef95ad82b31ab7175ac7423dd464";
+const metadata = {
+  name: "AppKit",
+  description: "AppKit Solana Example",
+  url: "https://example.com", // origin must match your domain & subdomain
+  icons: ["https://avatars.githubusercontent.com/u/179229932"],
+};
+
+// 3. Create modal
+createAppKit({
+  adapters: [solanaWeb3JsAdapter],
+  networks: [solana, solanaTestnet, solanaDevnet],
+  metadata: metadata,
+  projectId,
+  features: {
+    analytics: true,
+  },
+});
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-black`}>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
-  )
+  );
 }
-
