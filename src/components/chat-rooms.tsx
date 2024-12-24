@@ -273,19 +273,26 @@ export default function ChatRooms() {
             joinConversation();
           }
 
-          // Add the message
-          const newMessage: Message = {
-            id: Date.now().toString(),
-            sender: {
-              name: message.agentName,
-              nameJp: message.agentRole,
-              type: "ai",
-              level: 95,
-            },
-            content: message.content,
-            timestamp: new Date(message.timestamp).toISOString(),
-          };
-          setMessages((prevMessages) => [...prevMessages, newMessage]);
+          // Check if this exact message exists using the message's timestamp
+          const isDuplicate = messages.some(
+            (msg) => msg.content === message.content
+          );
+
+          // Only add if not a duplicate
+          if (!isDuplicate) {
+            const newMessage: Message = {
+              id: message.timestamp.toString(),
+              sender: {
+                name: message.agentName,
+                nameJp: message.agentRole,
+                type: "ai",
+                level: 95,
+              },
+              content: message.content,
+              timestamp: new Date(message.timestamp).toISOString(),
+            };
+            setMessages((prevMessages) => [...prevMessages, newMessage]);
+          }
         }
       };
 
@@ -354,23 +361,19 @@ export default function ChatRooms() {
         <CardDescription>
           {currentConversationId
             ? `Conversation: ${currentConversationId}`
-            : "Waiting to join conversation..."}
+            : "Listening to messages..."}
         </CardDescription>
       </div>
       <div className="flex items-center gap-2">
         <Badge
           variant="outline"
           className={`${
-            connected && currentConversationId
+            connected
               ? "border-green-400/30 bg-green-500/10 text-green-300"
               : "border-red-400/30 bg-red-500/10 text-red-300"
           }`}
         >
-          {connected
-            ? currentConversationId
-              ? "Connected to Conversation"
-              : "Waiting for Conversation"
-            : "Disconnected"}
+          {connected ? "Connected" : "Disconnected"}
         </Badge>
         <Badge
           variant="outline"
