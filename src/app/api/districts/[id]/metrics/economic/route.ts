@@ -6,16 +6,16 @@ export async function GET(
 ) {
   try {
     const data = {
-      airQuality: 250,
-      noiseLevel: 60,
-      crowdingLevel: 68,
-      greenSpaceUsage: 78,
+      businessActivity: 88,
+      growthRate: 4.2,
+      activeTransactions: 1234,
+      marketSentiment: "positive",
     };
 
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch environmental metrics" },
+      { error: "Failed to fetch economic metrics" },
       { status: 500 }
     );
   }

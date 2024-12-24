@@ -31,7 +31,6 @@ import {
   Clock,
   Heart,
 } from "lucide-react";
-import { MetricsWebSocket } from "@/lib/websocket";
 
 interface MetricsDashboardProps {
   districtId: string;
@@ -124,15 +123,8 @@ type MetricsData = {
     resourceUtilization: number;
     efficiency: number;
   };
-  donations: {
-    activeCampaigns: number;
-    totalDonations: number;
-    goalProgress: number;
-    impactScore: number;
-  };
 };
 
-// Then define the fallback data that matches the type
 const fallbackData: MetricsData = {
   weather: {
     temperature: 22,
@@ -143,11 +135,11 @@ const fallbackData: MetricsData = {
     windDirection: "NE",
   },
   environmental: {
-    airQuality: 50,
+    airQuality: 95,
     noiseLevel: 45,
-    waterQuality: 7,
-    greenCoverage: 0.4,
-    emissions: 0.5,
+    waterQuality: 98,
+    greenCoverage: 35,
+    emissions: 12,
   },
   emergency: {
     level: "normal",
@@ -158,13 +150,13 @@ const fallbackData: MetricsData = {
     populationCount: 15234,
     activeEntities: 12453,
     visitorCount: 892,
-    peakHoursStatus: "Optimal",
+    peakHoursStatus: "moderate",
   },
   community: {
     activeEvents: 12,
     ongoingMeetings: 5,
     collaborationSessions: 8,
-    chatActivity: "High",
+    chatActivity: "high",
   },
   safety: {
     overallScore: 95,
@@ -173,127 +165,132 @@ const fallbackData: MetricsData = {
     serviceAvailability: 98,
   },
   resources: {
-    energyConsumption: 72,
-    waterUsage: 65,
+    energyConsumption: 82,
+    waterUsage: 78,
     wasteManagement: 88,
-    efficiency: 91,
+    efficiency: 92,
   },
   transport: {
-    trafficDensity: 45,
-    publicTransportLoad: 68,
-    parkingAvailable: 342,
-    avgTransitTime: 15,
+    trafficDensity: 65,
+    publicTransportLoad: 72,
+    parkingAvailable: 234,
+    avgTransitTime: 18,
   },
   economic: {
-    businessActivity: 82,
+    businessActivity: 88,
     growthRate: 4.2,
-    activeTransactions: 1243,
-    marketSentiment: "Positive",
+    activeTransactions: 1234,
+    marketSentiment: "positive",
   },
   cultural: {
-    eventAttendance: 89,
-    culturalSiteVisits: 1205,
-    communityEngagement: 86,
-    socialCohesion: 92,
+    eventAttendance: 85,
+    culturalSiteVisits: 450,
+    communityEngagement: 78,
+    socialCohesion: 82,
   },
   infrastructure: {
-    maintenanceRequests: 23,
+    maintenanceRequests: 12,
     serviceUptime: 99.9,
-    healthScore: 94,
+    healthScore: 95,
     developmentProgress: 78,
   },
   budget: {
-    currentStatus: 8500000,
-    monthlySpending: 750000,
+    currentStatus: 2500000,
+    monthlySpending: 180000,
     efficiency: 92,
     allocation: {
       infrastructure: 35,
       services: 25,
-      development: 20,
-      emergency: 20,
+      development: 30,
+      emergency: 10,
     },
   },
   departments: {
     responseTimes: 95,
-    serviceQuality: 89,
-    resourceUtilization: 86,
-    efficiency: 91,
-  },
-  donations: {
-    activeCampaigns: 5,
-    totalDonations: 2500000,
-    goalProgress: 75,
-    impactScore: 89,
+    serviceQuality: 92,
+    resourceUtilization: 88,
+    efficiency: 90,
   },
 };
 
-export interface WebSocketMetricsData {
-  type: string;
-  data: MetricsData;
-  timestamp: number;
-}
-
 export function MetricsDashboard({ districtId }: MetricsDashboardProps) {
-  // Use the fallback data directly
   const [data, setData] = useState<MetricsData>(fallbackData);
 
-  // Modify the WebSocket effect to properly handle the data
-  useEffect(() => {
-    const ws = new MetricsWebSocket(
-      districtId,
-      (update: WebSocketMetricsData) => {
-        if (update.type === "initial" || update.type === "update") {
-          setData((prevData) => ({
-            ...prevData,
-            ...update.data,
-          }));
-        }
-      },
-      (error) => {
-        console.error("WebSocket error:", error);
-      }
-    );
-
-    return () => {
-      ws.disconnect();
-    };
-  }, [districtId]);
-
-  // Remove or modify the fetch effect since we're using WebSocket
-  // You might want to keep it as a fallback if WebSocket fails
+  // Fetch metrics data every 10 minutes
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const metricTypes = [
-          "weather",
-          "emergency",
-          // ... rest of your metric types
-        ];
+        // Fetch all metrics in parallel
+        const [
+          metricsResponse,
+          environmentalResponse,
+          culturalResponse,
+          economicResponse,
+          vitalsResponse,
+        ] = await Promise.all([
+          fetch(`/api/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c/metrics`),
+          fetch(
+            `/api/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c/metrics/environmental`
+          ),
+          fetch(
+            `/api/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c/metrics/cultural`
+          ),
+          fetch(
+            `/api/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c/metrics/economic`
+          ),
+          fetch(`/api/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c/vitals`),
+        ]);
 
-        const responses = await Promise.all(
-          metricTypes.map(async (metric) => {
-            const response = await fetch(
-              `/api/districts/${districtId}/metrics?metric=${metric}`
-            );
-            if (!response.ok)
-              throw new Error(`Failed to fetch ${metric} metrics`);
-            return response.json();
-          })
-        );
+        const [metrics, environmental, cultural, economic, vitals] =
+          await Promise.all([
+            metricsResponse.json(),
+            environmentalResponse.json(),
+            culturalResponse.json(),
+            economicResponse.json(),
+            vitalsResponse.json(),
+          ]);
 
-        const newData = metricTypes.reduce((acc, metric, index) => {
-          acc[metric as keyof typeof fallbackData] = responses[index];
-          return acc;
-        }, {} as typeof fallbackData);
-
-        setData((prevData) => ({ ...prevData, ...newData }));
+        // Update state with combined data
+        setData((prev) => ({
+          ...prev,
+          environmental: {
+            airQuality: environmental.airQuality,
+            noiseLevel: environmental.noiseLevel,
+            waterQuality: metrics.data.environmental.waterQuality,
+            greenCoverage: environmental.greenSpaceUsage / 100, // Convert to decimal
+            emissions: prev.environmental.emissions, // Keep existing value
+          },
+          cultural: {
+            eventAttendance: cultural.eventAttendance,
+            culturalSiteVisits: cultural.culturalSiteVisits,
+            communityEngagement: cultural.communityEngagement,
+            socialCohesion: cultural.socialCohesion,
+          },
+          economic: {
+            businessActivity: economic.businessActivity,
+            growthRate: economic.growthRate,
+            activeTransactions: economic.activeTransactions,
+            marketSentiment: economic.marketSentiment,
+          },
+          vitals: {
+            populationCount: vitals.populationCount,
+            activeEntities: vitals.activeEntities,
+            visitorCount: vitals.visitorCount,
+            peakHoursStatus: vitals.peakHoursStatus,
+          },
+        }));
       } catch (error) {
         console.error("Error fetching metrics:", error);
       }
     };
 
-    // Only fetch initially as backup
+    // Initial fetch
     fetchMetrics();
+
+    // Set up interval for subsequent fetches (10 minutes)
+    const interval = setInterval(fetchMetrics, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, [districtId]);
 
   return (

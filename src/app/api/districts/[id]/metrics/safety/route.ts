@@ -6,16 +6,16 @@ export async function GET(
 ) {
   try {
     const data = {
-      airQuality: 250,
-      noiseLevel: 60,
-      crowdingLevel: 68,
-      greenSpaceUsage: 78,
+      overallScore: 95,
+      recentIncidents: 3,
+      responseTime: "2.5 min",
+      serviceAvailability: 98,
     };
 
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch environmental metrics" },
+      { error: "Failed to fetch safety metrics" },
       { status: 500 }
     );
   }

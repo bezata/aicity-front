@@ -6,16 +6,16 @@ export async function GET(
 ) {
   try {
     const data = {
-      airQuality: 250,
-      noiseLevel: 60,
-      crowdingLevel: 68,
-      greenSpaceUsage: 78,
+      eventAttendance: 89,
+      culturalSiteVisits: 1205,
+      communityEngagement: 86,
+      socialCohesion: 92,
     };
 
     return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to fetch environmental metrics" },
+      { error: "Failed to fetch cultural metrics" },
       { status: 500 }
     );
   }

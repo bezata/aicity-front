@@ -1,42 +1,47 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-
-const API_URL = "http://localhost:3001/api";
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/districts/${params.id}/metrics`);
-    const metrics = await response.json();
-    return NextResponse.json(metrics);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch district metrics" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const body = await request.json();
-    const response = await fetch(`${API_URL}/districts/${params.id}/metrics`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
+    // Simulated data - in a real app, this would come from a database or external API
+    const data = {
+      success: true,
+      data: {
+        safety: 0.8,
+        cleanliness: 0.7,
+        noise: 0.3,
+        crowding: 0.4,
+        ambiance: 0.7,
+        education: 0.75,
+        healthcare: 0.8,
+        environment: 0.7,
+        economicGrowth: 0.6,
+        propertyValues: 0.7,
+        businessActivity: 0.6,
+        infrastructureQuality: 0.7,
+        publicServiceAccess: 0.6,
+        transportEfficiency: 0.7,
+        culturalVibrancy: 0.8,
+        communityWellbeing: 0.7,
+        socialCohesion: 0.8,
+        energyEfficiency: 0.7,
+        greenSpaceCoverage: 0.6,
+        environmentalHealth: 0.7,
+        environmental: {
+          airQuality: 50,
+          noiseLevel: 45,
+          waterQuality: 7,
+          greenCoverage: 0.4,
+        },
       },
-      body: JSON.stringify(body),
-    });
-    const metrics = await response.json();
-    return NextResponse.json(metrics);
+    };
+
+    return NextResponse.json(data);
   } catch (error) {
     return NextResponse.json(
-      { error: "Failed to update district metrics" },
+      { error: "Failed to fetch metrics" },
       { status: 500 }
     );
   }

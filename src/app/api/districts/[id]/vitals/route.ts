@@ -1,16 +1,22 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const vitals = {
-    populationCount: 15234 + Math.floor(Math.random() * 100),
-    activeEntities: 12453 + Math.floor(Math.random() * 200),
-    visitorCount: 892 + Math.floor(Math.random() * 50),
-    peakHoursStatus: Math.random() > 0.7 ? "Busy" : "Optimal",
+  try {
+    const data = {
+      populationCount: 15234,
+      activeEntities: 12453,
+      visitorCount: 892,
+      peakHoursStatus: "Optimal",
+    };
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Failed to fetch vitals" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(vitals)
 }
-

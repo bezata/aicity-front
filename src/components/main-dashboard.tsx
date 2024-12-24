@@ -29,8 +29,6 @@ import { useState, useEffect } from "react";
 import { NeuralBrainAnimation } from "./neural-brain-animation";
 import { CityVitals } from "./city-vitals";
 import { MetricsDashboard } from "./metrics-dashboard";
-import { MetricsWebSocket } from "@/lib/websocket";
-import type { WebSocketMetricsData } from "./metrics-dashboard";
 
 interface District {
   id: string;
@@ -74,12 +72,26 @@ interface District {
   };
 }
 
+interface CityMetrics {
+  consciousness: number;
+  harmony: number;
+  energy: number;
+  activity: number;
+  population: number;
+  activeEntities: number;
+  emergencyLevel: string;
+  incidents: number;
+  safetyScore: number;
+  responseTime: string;
+  serviceAvailability: number;
+}
+
 export function MainDashboard() {
   const router = useRouter();
   const [systemStatus, setSystemStatus] = useState<
     "normal" | "warning" | "critical"
   >("normal");
-  const [cityMetrics, setCityMetrics] = useState({
+  const [cityMetrics, setCityMetrics] = useState<CityMetrics>({
     consciousness: 95,
     harmony: 92,
     energy: 88,
@@ -89,82 +101,98 @@ export function MainDashboard() {
     emergencyLevel: "low",
     incidents: 2,
     safetyScore: 95,
+    responseTime: "N/A",
+    serviceAvailability: 0,
   });
   const [districts, setDistricts] = useState<District[]>([]);
 
-  // Fetch districts data every 30 minutes
+  // Fetch all data every 10 minutes
   useEffect(() => {
-    const fetchDistricts = async () => {
+    const districtId = "a42ed892-3878-45a5-9a1a-4ceaf9524f1c";
+
+    const fetchData = async () => {
       try {
-        const response = await fetch("http://localhost:3001/api/districts/");
-        const data = await response.json();
-        if (data.success && data.data) {
-          setDistricts(data.data);
+        // Fetch districts
+        const districtsResponse = await fetch("/api/districts");
+        const districtsData = await districtsResponse.json();
+        if (districtsData.success && districtsData.data) {
+          console.log("Districts data:", districtsData.data); // Debug log
+          setDistricts(districtsData.data);
         }
+
+        // Fetch metrics in parallel
+        const [metricsResponse, vitalsResponse, safetyResponse] =
+          await Promise.all([
+            fetch(`/api/districts/${districtId}/metrics`),
+            fetch(`/api/districts/${districtId}/vitals`),
+            fetch(`/api/districts/${districtId}/metrics/safety`),
+          ]);
+
+        const [metrics, vitals, safety] = await Promise.all([
+          metricsResponse.json(),
+          vitalsResponse.json(),
+          safetyResponse.json(),
+        ]);
+
+        console.log("Safety metrics received:", safety); // Debug log
+
+        // Update all metrics in a single state update
+        setCityMetrics((prev) => {
+          const newState = {
+            ...prev,
+            // Safety metrics from dedicated endpoint
+            safetyScore: safety.overallScore,
+            incidents: safety.recentIncidents,
+            responseTime: safety.responseTime,
+            serviceAvailability: safety.serviceAvailability,
+            // Population metrics
+            population: vitals.populationCount,
+            activeEntities: vitals.activeEntities,
+            // Map other metrics
+            consciousness: Math.round(
+              (metrics.data.communityWellbeing + metrics.data.socialCohesion) *
+                50
+            ),
+            harmony: Math.round(metrics.data.socialCohesion * 100),
+            energy: Math.round(metrics.data.energyEfficiency * 100),
+            activity: Math.round(metrics.data.businessActivity * 100),
+          };
+          console.log("Updated city metrics:", newState); // Debug log
+          return newState;
+        });
+
+        // Update system status based on metrics
+        const overallHealth =
+          (safety.overallScore / 100 + // Convert percentage to decimal
+            metrics.data.environmentalHealth +
+            metrics.data.infrastructureQuality) /
+          3;
+
+        setSystemStatus(
+          overallHealth > 0.7
+            ? "normal"
+            : overallHealth > 0.4
+            ? "warning"
+            : "critical"
+        );
       } catch (error) {
-        console.error("Error fetching districts:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
     // Initial fetch
-    fetchDistricts();
+    fetchData();
 
-    // Set up interval for subsequent fetches (30 minutes)
-    const interval = setInterval(fetchDistricts, 30 * 60 * 1000);
+    // Set up interval for subsequent fetches (10 minutes)
+    const interval = setInterval(fetchData, 10 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // Single effect for all data fetching
 
-  // WebSocket connection for real-time metrics
+  // Add debug log for districts state
   useEffect(() => {
-    const ws = new MetricsWebSocket(
-      "main",
-      (update: WebSocketMetricsData) => {
-        if (
-          (update.type === "initial" || update.type === "update") &&
-          update.data
-        ) {
-          // Update emergency level if it exists
-          if (update.data.emergency?.level) {
-            setSystemStatus(update.data.emergency.level);
-          }
-
-          // Update all metrics in a single state update
-          setCityMetrics((prev) => {
-            const newMetrics = {
-              ...prev,
-              population:
-                update.data.vitals?.populationCount ?? prev.population,
-              activeEntities:
-                update.data.vitals?.activeEntities ?? prev.activeEntities,
-              emergencyLevel:
-                update.data.emergency?.level ?? prev.emergencyLevel,
-              incidents:
-                update.data.emergency?.activeIncidents ?? prev.incidents,
-              safetyScore: update.data.safety?.overallScore ?? prev.safetyScore,
-            };
-
-            // Ensure safety metrics are properly updated
-            if (update.data.safety) {
-              newMetrics.safetyScore = update.data.safety.overallScore;
-              if (update.data.emergency?.activeIncidents !== undefined) {
-                newMetrics.incidents = update.data.emergency.activeIncidents;
-              }
-            }
-
-            return newMetrics;
-          });
-        }
-      },
-      (error) => {
-        console.error("WebSocket error:", error);
-      }
-    );
-
-    return () => {
-      ws.disconnect();
-    };
-  }, []);
+    console.log("Current districts:", districts);
+  }, [districts]);
 
   return (
     <div className="min-h-screen bg-black text-white">
