@@ -51,33 +51,3 @@ export async function GET(
     );
   }
 }
-
-// WebSocket upgrade handler for real-time updates
-export async function GET_WS(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const { socket, response } = await (WebSocket as any).upgradeWebSocket(request);
-    const backendWs = new WebSocket(
-      `${process.env.BACKEND_WS_URL}/districts/${params.id}/live`
-    );
-
-    // Forward messages from backend to client
-    backendWs.onmessage = (event) => {
-      socket.send(event.data);
-    };
-
-    // Forward messages from client to backend
-    socket.onmessage = (event: any) => {
-      backendWs.send(event.data);
-    };
-
-    return response;
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to establish WebSocket connection" },
-      { status: 500 }
-    );
-  }
-}

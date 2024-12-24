@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Scale, Shield, Cpu, Zap, Activity, ChevronRight } from 'lucide-react'
+import * as React from "react";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Scale, Shield, Cpu, Zap, Activity, ChevronRight } from "lucide-react";
 
 interface Proposal {
-  id: string
-  title: string
-  titleJp: string
-  description: string
-  status: "active" | "pending" | "completed"
+  id: string;
+  title: string;
+  titleJp: string;
+  description: string;
+  status: "active" | "pending" | "completed";
   votes: {
-    support: number
-    neutral: number
-    oppose: number
-  }
-  impact: number
-  timeRemaining: string
+    support: number;
+    neutral: number;
+    oppose: number;
+  };
+  impact: number;
+  timeRemaining: string;
 }
 
 export function AIGovernancePanel() {
@@ -31,15 +31,16 @@ export function AIGovernancePanel() {
       id: "1",
       title: "Neural Network Expansion",
       titleJp: "ニューラルネットワークの拡張",
-      description: "Proposal to expand the district's neural network capacity by 30%",
+      description:
+        "Proposal to expand the district's neural network capacity by 30%",
       status: "active",
       votes: {
         support: 65,
         neutral: 20,
-        oppose: 15
+        oppose: 15,
       },
       impact: 85,
-      timeRemaining: "2 cycles"
+      timeRemaining: "2 cycles",
     },
     {
       id: "2",
@@ -50,10 +51,10 @@ export function AIGovernancePanel() {
       votes: {
         support: 45,
         neutral: 40,
-        oppose: 15
+        oppose: 15,
       },
       impact: 92,
-      timeRemaining: "5 cycles"
+      timeRemaining: "5 cycles",
     },
     {
       id: "3",
@@ -64,12 +65,12 @@ export function AIGovernancePanel() {
       votes: {
         support: 78,
         neutral: 12,
-        oppose: 10
+        oppose: 10,
       },
       impact: 95,
-      timeRemaining: "1 cycle"
-    }
-  ])
+      timeRemaining: "1 cycle",
+    },
+  ]);
 
   return (
     <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
@@ -82,7 +83,8 @@ export function AIGovernancePanel() {
             variant="outline"
             className="border-purple-400/30 bg-purple-500/10 text-purple-300"
           >
-            Active Proposals: {proposals.filter(p => p.status === "active").length}
+            Active Proposals:{" "}
+            {proposals.filter((p) => p.status === "active").length}
           </Badge>
         </div>
       </CardHeader>
@@ -119,10 +121,14 @@ export function AIGovernancePanel() {
                           variant="outline"
                           className={`
                             border-purple-400/30 bg-purple-500/10 text-purple-300
-                            ${proposal.status === "active" && "animate-pulse border-green-400/30 bg-green-500/10 text-green-300"}
+                            ${
+                              proposal.status === "active" &&
+                              "animate-pulse border-green-400/30 bg-green-500/10 text-green-300"
+                            }
                           `}
                         >
-                          {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
+                          {proposal.status.charAt(0).toUpperCase() +
+                            proposal.status.slice(1)}
                         </Badge>
                       </div>
 
@@ -141,7 +147,8 @@ export function AIGovernancePanel() {
                           <Progress
                             value={proposal.votes.support}
                             className="h-1 bg-purple-500/10"
-                            indicatorClassName="bg-green-500"
+                            // @ts-ignore
+                            indicatorClassName="bg-purple-500"
                           />
                         </div>
 
@@ -155,6 +162,7 @@ export function AIGovernancePanel() {
                           <Progress
                             value={proposal.votes.neutral}
                             className="h-1 bg-purple-500/10"
+                            // @ts-ignore
                             indicatorClassName="bg-purple-500"
                           />
                         </div>
@@ -169,6 +177,7 @@ export function AIGovernancePanel() {
                           <Progress
                             value={proposal.votes.oppose}
                             className="h-1 bg-purple-500/10"
+                            // @ts-ignore
                             indicatorClassName="bg-red-500"
                           />
                         </div>
@@ -177,21 +186,25 @@ export function AIGovernancePanel() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="space-y-1">
-                            <p className="text-xs text-purple-300/50">Impact Level</p>
+                            <p className="text-xs text-purple-300/50">
+                              Impact Level
+                            </p>
                             <div className="flex items-center gap-1 text-purple-300">
                               <Activity className="h-3 w-3" />
                               <span>{proposal.impact}%</span>
                             </div>
                           </div>
                           <div className="space-y-1">
-                            <p className="text-xs text-purple-300/50">Time Remaining</p>
+                            <p className="text-xs text-purple-300/50">
+                              Time Remaining
+                            </p>
                             <div className="flex items-center gap-1 text-purple-300">
                               <Cpu className="h-3 w-3" />
                               <span>{proposal.timeRemaining}</span>
                             </div>
                           </div>
                         </div>
-                        
+
                         <Button
                           variant="ghost"
                           className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
@@ -209,6 +222,5 @@ export function AIGovernancePanel() {
         </Tabs>
       </CardContent>
     </Card>
-  )
+  );
 }
-

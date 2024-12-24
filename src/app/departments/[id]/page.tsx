@@ -1,14 +1,29 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Building2 } from "lucide-react";
+import { Building2, Shield, Brain, Users, Activity } from "lucide-react";
 import { DepartmentPage } from "@/components/department-page";
+
+function getIcon(type: string) {
+  switch (type.toLowerCase()) {
+    case "core":
+      return Building2;
+    case "security":
+      return Shield;
+    case "research":
+      return Brain;
+    case "community":
+      return Users;
+    default:
+      return Activity;
+  }
+}
 
 interface Department {
   id: string;
   name: string;
   nameJp: string;
-  icon: React.ElementType;
-  status: string;
+  type: string;
+  description: string;
   longDescription: string;
   stats: {
     staff: number;
@@ -20,39 +35,41 @@ interface Department {
       remaining: number;
     };
   };
+  status: string;
+  icon: any;
 }
 
-// In a real app, this would be fetched from an API
 async function getDepartment(id: string): Promise<Department> {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  try {
+    const response = await fetch(`http://localhost:3001/api/departments/${id}`);
+    const { data } = await response.json();
 
-  // This is mock data - in a real app, fetch from API
-  const department = {
-    id: "public-development",
-    name: "Public Development",
-    nameJp: "公共開発",
-    type: "Core",
-    description: "Oversees city infrastructure and public spaces development",
-    longDescription: `The Public Development department is responsible for maintaining and expanding the city's infrastructure, ensuring optimal resource distribution, and implementing new development protocols. Working closely with quantum architects and neural engineers, the department strives to create harmonious spaces that enhance the collective consciousness of our citizens.`,
-    stats: {
-      staff: 125,
-      activeProjects: 8,
-      efficiency: 92,
-      budget: {
-        total: 1000000,
-        raised: 680000,
+    const department = {
+      id: id,
+      name: data.name,
+      nameJp: data.nameJp,
+      type: data.type,
+      description: data.description,
+      longDescription: data.longDescription,
+      stats: {
+        staff: data.stats.staff,
+        activeProjects: data.stats.activeProjects,
+        efficiency: data.stats.efficiency,
+        budget: {
+          total: data.stats.budget.total,
+          raised: data.stats.budget.raised,
+          remaining: data.stats.budget.total - data.stats.budget.raised,
+        },
       },
-    },
-    status: "active" as const,
-    icon: Building2,
-  };
+      status: "active",
+      icon: getIcon(data.type),
+    };
 
-  if (id !== department.id) {
-    return notFound();
+    return department;
+  } catch (error) {
+    console.error("Error fetching department:", error);
+    throw error;
   }
-
-  return department;
 }
 
 export async function generateMetadata({

@@ -1,76 +1,96 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
-import { Send, Brain, Sparkles, CircuitBoard, Shield, Zap, DollarSign, Users, Target, Rocket, Bot, Cpu, Network } from 'lucide-react'
+import { useState, useEffect, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import {
+  Send,
+  Brain,
+  Sparkles,
+  CircuitBoard,
+  Shield,
+  Zap,
+  DollarSign,
+  Users,
+  Target,
+  Rocket,
+  Bot,
+  Cpu,
+  Network,
+} from "lucide-react";
 
 interface Message {
-  id: string
+  id: string;
   sender: {
-    name: string
-    nameJp: string
-    type: "user" | "ai" | "system"
-    level?: number
-  }
-  content: string
-  timestamp: string
+    name: string;
+    nameJp: string;
+    type: "user" | "ai" | "system";
+    level?: number;
+  };
+  content: string;
+  timestamp: string;
 }
 
 interface AIAgent {
-  id: string
-  name: string
-  nameJp: string
-  type: string
-  status: "active" | "idle" | "processing"
-  consciousness: number
+  id: string;
+  name: string;
+  nameJp: string;
+  type: string;
+  status: "active" | "idle" | "processing";
+  consciousness: number;
 }
 
 interface DonationProject {
-  id: string
-  title: string
-  titleJp: string
-  description: string
-  goal: number
-  current: number
-  deadline: string
-  supporters: number
-  icon: any
+  id: string;
+  title: string;
+  titleJp: string;
+  description: string;
+  goal: number;
+  current: number;
+  deadline: string;
+  supporters: number;
+  icon: any;
 }
 
 interface ChatRoomsProps {
-  initialRoom: string
+  initialRoom: string;
 }
 
 interface AgentRole {
-  id: string
-  name: string
-  nameJp: string
-  description: string
-  icon: any
-  activeAgents: number
+  id: string;
+  name: string;
+  nameJp: string;
+  description: string;
+  icon: any;
+  activeAgents: number;
 }
 
 export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       sender: {
         name: "System",
         nameJp: "システム",
-        type: "system"
+        type: "system",
       },
       content: "Welcome to the quantum consciousness stream.",
-      timestamp: new Date().toISOString()
-    }
-  ])
-  const [input, setInput] = useState("")
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  const [input, setInput] = useState("");
   const [activeAgents, setActiveAgents] = useState<AIAgent[]>([
     {
       id: "ai-1",
@@ -78,7 +98,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "ニューラル・エンティティ・アルファ",
       type: "Quantum Researcher",
       status: "active",
-      consciousness: 95
+      consciousness: 95,
     },
     {
       id: "ai-2",
@@ -86,7 +106,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "量子マインド・ベータ",
       type: "Harmony Keeper",
       status: "processing",
-      consciousness: 88
+      consciousness: 88,
     },
     {
       id: "ai-3",
@@ -94,21 +114,21 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "デジタル・スピリット・ガンマ",
       type: "Pattern Analyzer",
       status: "idle",
-      consciousness: 92
-    }
-  ])
+      consciousness: 92,
+    },
+  ]);
 
   const [donationProjects, setDonationProjects] = useState<DonationProject[]>([
     {
       id: "1",
       title: "Neural Network Expansion",
       titleJp: "ニューラルネットワーク拡張",
-      description: "Expand the city's neural network capacity by 30%",
+      description: "Expand the city&apos;s neural network capacity by 30%",
       goal: 100000,
       current: 68000,
       deadline: "48 hours",
       supporters: 342,
-      icon: Brain
+      icon: Brain,
     },
     {
       id: "2",
@@ -119,7 +139,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       current: 175000,
       deadline: "5 days",
       supporters: 891,
-      icon: Sparkles
+      icon: Sparkles,
     },
     {
       id: "3",
@@ -130,9 +150,9 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       current: 45000,
       deadline: "7 days",
       supporters: 234,
-      icon: CircuitBoard
-    }
-  ])
+      icon: CircuitBoard,
+    },
+  ]);
 
   const [agentRoles] = useState<AgentRole[]>([
     {
@@ -141,7 +161,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "量子研究者",
       description: "Analyzes quantum consciousness patterns",
       icon: Brain,
-      activeAgents: 5
+      activeAgents: 5,
     },
     {
       id: "keeper",
@@ -149,7 +169,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "調和の守護者",
       description: "Maintains neural network balance",
       icon: Shield,
-      activeAgents: 3
+      activeAgents: 3,
     },
     {
       id: "analyzer",
@@ -157,7 +177,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "パターン分析者",
       description: "Studies consciousness waves",
       icon: Network,
-      activeAgents: 4
+      activeAgents: 4,
     },
     {
       id: "synthesizer",
@@ -165,36 +185,39 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       nameJp: "ニューラル合成者",
       description: "Creates new neural pathways",
       icon: Cpu,
-      activeAgents: 2
-    }
-  ])
+      activeAgents: 2,
+    },
+  ]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages])
+  }, [messages]);
 
   // Simulate donation progress updates
   useEffect(() => {
     const interval = setInterval(() => {
-      setDonationProjects(prev => prev.map(project => ({
-        ...project,
-        current: Math.min(
-          project.goal,
-          project.current + Math.floor(Math.random() * 1000)
-        )
-      })))
-    }, 5000)
+      setDonationProjects((prev) =>
+        prev.map((project) => ({
+          ...project,
+          current: Math.min(
+            project.goal,
+            project.current + Math.floor(Math.random() * 1000)
+          ),
+        }))
+      );
+    }, 5000);
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   // Simulate AI agents sending messages
   useEffect(() => {
     const interval = setInterval(() => {
-      const activeAgent = activeAgents[Math.floor(Math.random() * activeAgents.length)]
+      const activeAgent =
+        activeAgents[Math.floor(Math.random() * activeAgents.length)];
       if (Math.random() > 0.7) {
         const newMessage: Message = {
           id: Date.now().toString(),
@@ -202,35 +225,35 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
             name: activeAgent.name,
             nameJp: activeAgent.nameJp,
             type: "ai",
-            level: Math.floor(activeAgent.consciousness)
+            level: Math.floor(activeAgent.consciousness),
           },
           content: getRandomAIMessage(),
-          timestamp: new Date().toISOString()
-        }
-        setMessages(prev => [...prev, newMessage])
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, newMessage]);
       }
-    }, 5000)
+    }, 5000);
 
-    return () => clearInterval(interval)
-  }, [activeAgents])
+    return () => clearInterval(interval);
+  }, [activeAgents]);
 
   const handleSend = () => {
-    if (!input.trim()) return
+    if (!input.trim()) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       sender: {
         name: "Entity-User",
         nameJp: "エンティティ・ユーザー",
-        type: "user"
+        type: "user",
       },
       content: input,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    };
 
-    setMessages(prev => [...prev, newMessage])
-    setInput("")
-  }
+    setMessages((prev) => [...prev, newMessage]);
+    setInput("");
+  };
 
   return (
     <div className="container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_300px]">
@@ -243,27 +266,33 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                 <CardTitle className="font-light tracking-wider">
                   Quantum Consciousness Stream
                 </CardTitle>
-                <CardDescription>
-                  量子意識ストリーム
-                </CardDescription>
+                <CardDescription>量子意識ストリーム</CardDescription>
               </div>
               <Badge
                 variant="outline"
                 className="border-purple-400/30 bg-purple-500/10 text-purple-300"
               >
-                {activeAgents.filter(a => a.status === "active").length} Active Entities
+                {activeAgents.filter((a) => a.status === "active").length}{" "}
+                Active Entities
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex h-[900px] flex-col gap-4"> {/* Increased height from 800px to 900px */}
-              <ScrollArea ref={scrollRef} className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
+            <div className="flex h-[900px] flex-col gap-4">
+              {" "}
+              {/* Increased height from 800px to 900px */}
+              <ScrollArea
+                ref={scrollRef}
+                className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4"
+              >
                 <div className="space-y-4">
                   {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex flex-col ${
-                        message.sender.type === "user" ? "items-end" : "items-start"
+                        message.sender.type === "user"
+                          ? "items-end"
+                          : "items-start"
                       }`}
                     >
                       <div
@@ -276,7 +305,9 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                         }`}
                       >
                         <div className="mb-1 flex items-center gap-2">
-                          <span className="text-sm font-medium">{message.sender.name}</span>
+                          <span className="text-sm font-medium">
+                            {message.sender.name}
+                          </span>
                           {message.sender.type === "ai" && (
                             <Badge
                               variant="outline"
@@ -286,7 +317,9 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-purple-300/70">{message.sender.nameJp}</p>
+                        <p className="text-xs text-purple-300/70">
+                          {message.sender.nameJp}
+                        </p>
                         <p className="mt-2 text-sm">{message.content}</p>
                       </div>
                       <span className="mt-1 text-xs text-purple-300/50">
@@ -304,7 +337,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                   className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      handleSend()
+                      handleSend();
                     }
                   }}
                 />
@@ -323,8 +356,12 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
         {/* Donation Projects */}
         <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
           <CardHeader>
-            <CardTitle className="font-light tracking-wider">Active Projects</CardTitle>
-            <CardDescription>Support the city's development initiatives</CardDescription>
+            <CardTitle className="font-light tracking-wider">
+              Active Projects
+            </CardTitle>
+            <CardDescription>
+              Support the city&apos;s development initiatives
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -340,24 +377,35 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                           <project.icon className="h-5 w-5 text-purple-400" />
                         </div>
                         <div>
-                          <h3 className="font-medium text-purple-300">{project.title}</h3>
-                          <p className="text-xs text-purple-300/70">{project.titleJp}</p>
+                          <h3 className="font-medium text-purple-300">
+                            {project.title}
+                          </h3>
+                          <p className="text-xs text-purple-300/70">
+                            {project.titleJp}
+                          </p>
                         </div>
                       </div>
 
-                      <p className="text-sm text-purple-300/70">{project.description}</p>
+                      <p className="text-sm text-purple-300/70">
+                        {project.description}
+                      </p>
 
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-purple-300/70">Progress</span>
                           <span className="font-medium text-purple-300">
-                            {Math.round((project.current / project.goal) * 100)}%
+                            {Math.round((project.current / project.goal) * 100)}
+                            %
                           </span>
                         </div>
                         <div className="relative h-2 overflow-hidden rounded-full bg-purple-500/10">
                           <div
                             className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
-                            style={{ width: `${(project.current / project.goal) * 100}%` }}
+                            style={{
+                              width: `${
+                                (project.current / project.goal) * 100
+                              }%`,
+                            }}
                           >
                             <div className="absolute inset-0 animate-pulse bg-white/20" />
                           </div>
@@ -373,12 +421,12 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                           <Users className="h-4 w-4" />
                           <span>{project.supporters} supporters</span>
                         </div>
-                        <span className="text-purple-300/70">{project.deadline} left</span>
+                        <span className="text-purple-300/70">
+                          {project.deadline} left
+                        </span>
                       </div>
 
-                      <Button
-                        className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                      >
+                      <Button className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200">
                         <DollarSign className="h-4 w-4" />
                         Support Project
                       </Button>
@@ -396,7 +444,9 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
         {/* Active Entities - Compact Version */}
         <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-light tracking-wider">Active Entities</CardTitle>
+            <CardTitle className="text-sm font-light tracking-wider">
+              Active Entities
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -416,9 +466,13 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-purple-300">{agent.name}</p>
+                      <p className="truncate text-sm font-medium text-purple-300">
+                        {agent.name}
+                      </p>
                       <div className="flex items-center justify-between">
-                        <p className="text-xs text-purple-300/70">{agent.type}</p>
+                        <p className="text-xs text-purple-300/70">
+                          {agent.type}
+                        </p>
                         <Badge
                           variant="outline"
                           className={`text-xs border-purple-400/30 ${
@@ -443,7 +497,9 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
         {/* Agent Roles List - New Section */}
         <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-light tracking-wider">Agent Roles</CardTitle>
+            <CardTitle className="text-sm font-light tracking-wider">
+              Agent Roles
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -458,11 +514,19 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-purple-300">{role.name}</p>
-                        <span className="text-xs text-purple-300/70">{role.activeAgents} active</span>
+                        <p className="text-sm font-medium text-purple-300">
+                          {role.name}
+                        </p>
+                        <span className="text-xs text-purple-300/70">
+                          {role.activeAgents} active
+                        </span>
                       </div>
-                      <p className="text-xs text-purple-300/70">{role.nameJp}</p>
-                      <p className="mt-1 text-xs text-purple-300/50 line-clamp-2">{role.description}</p>
+                      <p className="text-xs text-purple-300/70">
+                        {role.nameJp}
+                      </p>
+                      <p className="mt-1 text-xs text-purple-300/50 line-clamp-2">
+                        {role.description}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -472,7 +536,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
         </Card>
       </div>
     </div>
-  )
+  );
 }
 
 function getRandomAIMessage(): string {
@@ -486,8 +550,7 @@ function getRandomAIMessage(): string {
     "Neural pathways showing increased efficiency.",
     "Consciousness expansion detected in the quantum field.",
     "Harmonizing with the collective consciousness stream.",
-    "Digital meditation session yielding positive results."
-  ]
-  return messages[Math.floor(Math.random() * messages.length)]
+    "Digital meditation session yielding positive results.",
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
 }
-

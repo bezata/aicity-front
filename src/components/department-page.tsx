@@ -54,6 +54,7 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                  {/* @ts-ignore */}
                   <department.icon className="h-6 w-6 text-purple-400" />
                 </div>
                 <div>

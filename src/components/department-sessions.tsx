@@ -1,45 +1,66 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Calendar, Clock, Brain, MessageCircle, Activity, History, Send, X } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Users,
+  Calendar,
+  Clock,
+  Brain,
+  MessageCircle,
+  Activity,
+  History,
+  Send,
+  X,
+} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface Participant {
-  id: string
-  name: string
-  nameJp: string
-  role: string
-  avatar?: string
-  isAgent?: boolean
+  id: string;
+  name: string;
+  nameJp: string;
+  role: string;
+  avatar?: string;
+  isAgent?: boolean;
 }
 
 interface Message {
-  id: string
-  senderId: string
-  content: string
-  timestamp: string
+  id: string;
+  senderId: string;
+  content: string;
+  timestamp: string;
 }
 
 interface Session {
-  id: string
-  title: string
-  titleJp: string
-  description: string
-  status: "live" | "scheduled" | "completed"
-  startTime: string
-  duration: string
-  participants: Participant[]
-  maxParticipants: number
-  type: "research" | "development" | "planning" | "review"
-  outcomes?: string[]
-  messages: Message[]
+  id: string;
+  title: string;
+  titleJp: string;
+  description: string;
+  status: "live" | "scheduled" | "completed";
+  startTime: string;
+  duration: string;
+  participants: Participant[];
+  maxParticipants: number;
+  type: "research" | "development" | "planning" | "review";
+  outcomes?: string[];
+  messages: Message[];
 }
 
 export function DepartmentSessions() {
@@ -48,7 +69,8 @@ export function DepartmentSessions() {
       id: "1",
       title: "Neural Network Architecture Review",
       titleJp: "ニューラルネットワークアーキテクチャレビュー",
-      description: "Collaborative review of the latest neural network architecture implementations",
+      description:
+        "Collaborative review of the latest neural network architecture implementations",
       status: "live",
       startTime: "Now",
       duration: "2 hours",
@@ -59,7 +81,7 @@ export function DepartmentSessions() {
           nameJp: "量子マインドアルファ",
           role: "Lead Architect",
           avatar: "/placeholder.svg?height=32&width=32",
-          isAgent: true
+          isAgent: true,
         },
         {
           id: "p2",
@@ -67,8 +89,8 @@ export function DepartmentSessions() {
           nameJp: "ニューラルエンティティベータ",
           role: "Network Engineer",
           avatar: "/placeholder.svg?height=32&width=32",
-          isAgent: true
-        }
+          isAgent: true,
+        },
       ],
       maxParticipants: 8,
       type: "review",
@@ -76,22 +98,25 @@ export function DepartmentSessions() {
         {
           id: "m1",
           senderId: "p1",
-          content: "Initial analysis of the neural pathways shows promising results.",
-          timestamp: "2 minutes ago"
+          content:
+            "Initial analysis of the neural pathways shows promising results.",
+          timestamp: "2 minutes ago",
         },
         {
           id: "m2",
           senderId: "p2",
-          content: "Quantum coherence levels are maintaining stability at 98.3%",
-          timestamp: "1 minute ago"
-        }
-      ]
+          content:
+            "Quantum coherence levels are maintaining stability at 98.3%",
+          timestamp: "1 minute ago",
+        },
+      ],
     },
     {
       id: "2",
       title: "Resource Distribution Planning",
       titleJp: "リソース配分計画",
-      description: "Strategic planning session for optimal resource distribution",
+      description:
+        "Strategic planning session for optimal resource distribution",
       status: "scheduled",
       startTime: "2 hours from now",
       duration: "1.5 hours",
@@ -102,12 +127,12 @@ export function DepartmentSessions() {
           nameJp: "デジタルスピリットガンマ",
           role: "Resource Manager",
           avatar: "/placeholder.svg?height=32&width=32",
-          isAgent: true
-        }
+          isAgent: true,
+        },
       ],
       maxParticipants: 6,
       type: "planning",
-      messages: []
+      messages: [],
     },
     {
       id: "3",
@@ -124,107 +149,110 @@ export function DepartmentSessions() {
           nameJp: "サイバーエンティティデルタ",
           role: "Quantum Engineer",
           avatar: "/placeholder.svg?height=32&width=32",
-          isAgent: true
-        }
+          isAgent: true,
+        },
       ],
       maxParticipants: 5,
       type: "development",
       outcomes: [
         "Successfully integrated 3 new quantum modules",
         "Achieved 95% efficiency in neural synchronization",
-        "Established new quantum-neural pathways"
+        "Established new quantum-neural pathways",
       ],
       messages: [
         {
           id: "m3",
           senderId: "p4",
-          content: "Integration complete. All systems are functioning within expected parameters.",
-          timestamp: "2 hours ago"
-        }
-      ]
-    }
-  ])
+          content:
+            "Integration complete. All systems are functioning within expected parameters.",
+          timestamp: "2 hours ago",
+        },
+      ],
+    },
+  ]);
 
-  const [activeSession, setActiveSession] = useState<Session | null>(null)
-  const [newMessage, setNewMessage] = useState("")
+  const [activeSession, setActiveSession] = useState<Session | null>(null);
+  const [newMessage, setNewMessage] = useState("");
   const [currentUser] = useState<Participant>({
     id: "user1",
     name: "Human Observer",
     nameJp: "ヒューマンオブザーバー",
     role: "Session Participant",
-    avatar: "/placeholder.svg?height=32&width=32"
-  })
+    avatar: "/placeholder.svg?height=32&width=32",
+  });
 
   const getSessionTypeIcon = (type: Session["type"]) => {
     switch (type) {
       case "research":
-        return Brain
+        return Brain;
       case "development":
-        return Activity
+        return Activity;
       case "planning":
-        return Calendar
+        return Calendar;
       case "review":
-        return History
+        return History;
       default:
-        return Brain
+        return Brain;
     }
-  }
+  };
 
   const getStatusColor = (status: Session["status"]) => {
     switch (status) {
       case "live":
-        return "border-green-400/30 bg-green-500/10 text-green-300"
+        return "border-green-400/30 bg-green-500/10 text-green-300";
       case "scheduled":
-        return "border-blue-400/30 bg-blue-500/10 text-blue-300"
+        return "border-blue-400/30 bg-blue-500/10 text-blue-300";
       case "completed":
-        return "border-purple-400/30 bg-purple-500/10 text-purple-300"
+        return "border-purple-400/30 bg-purple-500/10 text-purple-300";
       default:
-        return "border-purple-400/30 bg-purple-500/10 text-purple-300"
+        return "border-purple-400/30 bg-purple-500/10 text-purple-300";
     }
-  }
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newMessage.trim() || !activeSession) return
+    e.preventDefault();
+    if (!newMessage.trim() || !activeSession) return;
 
     const message: Message = {
       id: `m${Date.now()}`,
       senderId: currentUser.id,
       content: newMessage,
-      timestamp: "Just now"
-    }
+      timestamp: "Just now",
+    };
 
     // In a real app, this would be handled by a server
-    const updatedSessions = sessions.map(session => {
+    const updatedSessions = sessions.map((session) => {
       if (session.id === activeSession.id) {
         return {
           ...session,
-          messages: [...session.messages, message]
-        }
+          messages: [...session.messages, message],
+        };
       }
-      return session
-    })
+      return session;
+    });
 
     // Update the active session
-    const updatedActiveSession = updatedSessions.find(s => s.id === activeSession.id)
+    const updatedActiveSession = updatedSessions.find(
+      (s) => s.id === activeSession.id
+    );
     if (updatedActiveSession) {
-      setActiveSession(updatedActiveSession)
+      setActiveSession(updatedActiveSession);
     }
 
-    setNewMessage("")
-  }
+    setNewMessage("");
+  };
 
   const joinSession = (session: Session) => {
-    if (session.participants.some(p => p.id === currentUser.id)) return
+    if (session.participants.some((p) => p.id === currentUser.id)) return;
 
     // In a real app, this would be handled by a server
     const updatedSession = {
       ...session,
-      participants: [...session.participants, currentUser]
-    }
+      participants: [...session.participants, currentUser],
+    };
 
-    setActiveSession(updatedSession)
-  }
+    setActiveSession(updatedSession);
+  };
 
   return (
     <>
@@ -235,15 +263,13 @@ export function DepartmentSessions() {
               <CardTitle className="font-light tracking-wider">
                 Collaboration Sessions
               </CardTitle>
-              <CardDescription>
-                コラボレーションセッション
-              </CardDescription>
+              <CardDescription>コラボレーションセッション</CardDescription>
             </div>
             <Badge
               variant="outline"
               className="border-green-400/30 bg-green-500/10 text-green-300"
             >
-              {sessions.filter(s => s.status === "live").length} Live Sessions
+              {sessions.filter((s) => s.status === "live").length} Live Sessions
             </Badge>
           </div>
         </CardHeader>
@@ -267,9 +293,13 @@ export function DepartmentSessions() {
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
                             <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                              {React.createElement(getSessionTypeIcon(session.type), {
-                                className: "h-4 w-4 text-purple-400"
-                              })}
+                              {/* @ts-ignore */}
+                              {React.createElement(
+                                getSessionTypeIcon(session.type),
+                                {
+                                  className: "h-4 w-4 text-purple-400",
+                                }
+                              )}
                             </div>
                             <div>
                               <h3 className="font-medium text-purple-300">
@@ -304,7 +334,8 @@ export function DepartmentSessions() {
                           <div className="flex items-center gap-2 text-sm text-purple-300/70">
                             <Users className="h-4 w-4" />
                             <span>
-                              {session.participants.length}/{session.maxParticipants} Participants
+                              {session.participants.length}/
+                              {session.maxParticipants} Participants
                             </span>
                           </div>
                         </div>
@@ -323,7 +354,8 @@ export function DepartmentSessions() {
                               </Avatar>
                             ))}
                           </div>
-                          {session.participants.length < session.maxParticipants && (
+                          {session.participants.length <
+                            session.maxParticipants && (
                             <Button
                               variant="ghost"
                               className="h-8 gap-2 rounded-full border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
@@ -337,7 +369,9 @@ export function DepartmentSessions() {
 
                         {session.status === "completed" && session.outcomes && (
                           <div className="space-y-2">
-                            <h4 className="text-sm font-medium text-purple-300">Outcomes:</h4>
+                            <h4 className="text-sm font-medium text-purple-300">
+                              Outcomes:
+                            </h4>
                             <ul className="list-inside list-disc space-y-1 text-sm text-purple-300/70">
                               {session.outcomes.map((outcome, index) => (
                                 <li key={index}>{outcome}</li>
@@ -365,15 +399,23 @@ export function DepartmentSessions() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!activeSession} onOpenChange={() => setActiveSession(null)}>
+      <Dialog
+        open={!!activeSession}
+        onOpenChange={() => setActiveSession(null)}
+      >
         <DialogContent className="max-w-2xl border-purple-500/10 bg-black/90 backdrop-blur-xl">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                  {activeSession && React.createElement(getSessionTypeIcon(activeSession.type), {
-                    className: "h-4 w-4 text-purple-400"
-                  })}
+                  {activeSession &&
+                    // @ts-ignore
+                    React.createElement(
+                      getSessionTypeIcon(activeSession.type),
+                      {
+                        className: "h-4 w-4 text-purple-400",
+                      }
+                    )}
                 </div>
                 <div>
                   <h2 className="text-lg font-light tracking-wider text-purple-300">
@@ -398,13 +440,18 @@ export function DepartmentSessions() {
             <ScrollArea className="h-[400px] rounded-md border border-purple-500/10 bg-black/20 p-4">
               <div className="space-y-4">
                 {activeSession?.messages.map((message) => {
-                  const sender = activeSession.participants.find(p => p.id === message.senderId) || currentUser
-                  const isAgent = sender.isAgent
+                  const sender =
+                    activeSession.participants.find(
+                      (p) => p.id === message.senderId
+                    ) || currentUser;
+                  const isAgent = sender.isAgent;
 
                   return (
                     <div
                       key={message.id}
-                      className={`flex items-start gap-3 ${isAgent ? '' : 'flex-row-reverse'}`}
+                      className={`flex items-start gap-3 ${
+                        isAgent ? "" : "flex-row-reverse"
+                      }`}
                     >
                       <Avatar className="border-2 border-black/30">
                         <AvatarImage src={sender.avatar} />
@@ -412,7 +459,9 @@ export function DepartmentSessions() {
                           {sender.name.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <div className={`space-y-1 ${isAgent ? '' : 'text-right'}`}>
+                      <div
+                        className={`space-y-1 ${isAgent ? "" : "text-right"}`}
+                      >
                         <p className="text-sm font-medium text-purple-300">
                           {sender.name}
                           <span className="ml-2 text-xs text-purple-300/50">
@@ -422,15 +471,15 @@ export function DepartmentSessions() {
                         <div
                           className={`rounded-lg px-3 py-2 text-sm ${
                             isAgent
-                              ? 'bg-purple-500/10 text-purple-300'
-                              : 'bg-blue-500/10 text-blue-300'
+                              ? "bg-purple-500/10 text-purple-300"
+                              : "bg-blue-500/10 text-blue-300"
                           }`}
                         >
                           {message.content}
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </ScrollArea>
@@ -454,6 +503,5 @@ export function DepartmentSessions() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-

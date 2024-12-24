@@ -1,7 +1,13 @@
-import Link from "next/link"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertTriangle, ArrowLeft } from 'lucide-react'
+import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 export default function DepartmentNotFound() {
   return (
@@ -12,13 +18,12 @@ export default function DepartmentNotFound() {
             <AlertTriangle className="h-5 w-5 text-yellow-400" />
             <CardTitle>Department Not Found</CardTitle>
           </div>
-          <CardDescription>
-            部門が見つかりません
-          </CardDescription>
+          <CardDescription>部門が見つかりません</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-yellow-400">
-            The department you're looking for doesn't exist or has been moved.
+            The department you&apos;re looking for doesn&apos;t exist or has
+            been moved.
           </p>
           <Button
             asChild
@@ -32,6 +37,5 @@ export default function DepartmentNotFound() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-
