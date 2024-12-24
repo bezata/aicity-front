@@ -76,8 +76,20 @@ interface AgentRole {
   activeAgents: number;
 }
 
-export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
+interface ConversationJoinedMessage {
+  type: "conversation_joined";
+  data: {
+    conversationId: string;
+    history: Message[];
+  };
+}
+
+const WS_URL = "ws://localhost:3001/ws";
+
+export default function ChatRooms() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -91,32 +103,7 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
     },
   ]);
   const [input, setInput] = useState("");
-  const [activeAgents, setActiveAgents] = useState<AIAgent[]>([
-    {
-      id: "ai-1",
-      name: "Neural Entity Alpha",
-      nameJp: "ニューラル・エンティティ・アルファ",
-      type: "Quantum Researcher",
-      status: "active",
-      consciousness: 95,
-    },
-    {
-      id: "ai-2",
-      name: "Quantum Mind Beta",
-      nameJp: "量子マインド・ベータ",
-      type: "Harmony Keeper",
-      status: "processing",
-      consciousness: 88,
-    },
-    {
-      id: "ai-3",
-      name: "Digital Spirit Gamma",
-      nameJp: "デジタル・スピリット・ガンマ",
-      type: "Pattern Analyzer",
-      status: "idle",
-      consciousness: 92,
-    },
-  ]);
+  const [activeAgents, setActiveAgents] = useState<AIAgent[]>([]);
 
   const [donationProjects, setDonationProjects] = useState<DonationProject[]>([
     {
@@ -189,6 +176,43 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
     },
   ]);
 
+  // Add last message tracking
+  const lastMessageRef = useRef<{ content: string; timestamp: number } | null>(
+    null
+  );
+
+  // Add conversation ID tracking
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
+
+  // Add ref to track latest conversation
+  const latestConversationRef = useRef<string | null>(null);
+
+  // Add message filtering function
+  const isMessageValid = (content: string) => {
+    // Check for empty or whitespace-only messages
+    if (!content.trim()) return false;
+
+    const now = Date.now();
+    if (lastMessageRef.current) {
+      // Check if same content within 30 seconds
+      if (
+        content === lastMessageRef.current.content &&
+        now - lastMessageRef.current.timestamp < 30000
+      ) {
+        return false;
+      }
+    }
+
+    // Update last message reference
+    lastMessageRef.current = {
+      content,
+      timestamp: now,
+    };
+    return true;
+  };
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
@@ -213,32 +237,98 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate AI agents sending messages
+  // Update join conversation function
+  const joinConversation = () => {
+    if (wsRef.current && connected) {
+      const joinMessage = {
+        type: "join_conversation",
+        conversationId: "conv-1735081993307",
+      };
+      wsRef.current.send(JSON.stringify(joinMessage));
+      setCurrentConversationId("conv-1735081993307");
+    }
+  };
+
+  // Update WebSocket message handling
   useEffect(() => {
-    const interval = setInterval(() => {
-      const activeAgent =
-        activeAgents[Math.floor(Math.random() * activeAgents.length)];
-      if (Math.random() > 0.7) {
-        const newMessage: Message = {
-          id: Date.now().toString(),
-          sender: {
-            name: activeAgent.name,
-            nameJp: activeAgent.nameJp,
-            type: "ai",
-            level: Math.floor(activeAgent.consciousness),
-          },
-          content: getRandomAIMessage(),
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, newMessage]);
+    const connectWebSocket = () => {
+      const ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => {
+        console.log("Connected to WebSocket");
+        setConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log("Received message:", data);
+
+        if (data.type === "agent_conversation" && data.data?.message) {
+          const { conversationId, message } = data.data;
+          // Track latest conversation ID
+          latestConversationRef.current = conversationId;
+
+          // Join conversation in background if not joined yet
+          if (!currentConversationId) {
+            joinConversation();
+          }
+
+          // Add the message
+          const newMessage: Message = {
+            id: Date.now().toString(),
+            sender: {
+              name: message.agentName,
+              nameJp: message.agentRole,
+              type: "ai",
+              level: 95,
+            },
+            content: message.content,
+            timestamp: new Date(message.timestamp).toISOString(),
+          };
+          setMessages((prevMessages) => [...prevMessages, newMessage]);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("Disconnected from WebSocket");
+        setConnected(false);
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = (error: Event) => {
+        console.error("WebSocket error:", error);
+        ws.close();
+      };
+
+      wsRef.current = ws;
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
       }
-    }, 5000);
+    };
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [activeAgents]);
-
+  // Update handleSend to join conversation if needed before sending
   const handleSend = () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !isMessageValid(input)) return;
+
+    // Join conversation first if not joined
+    if (!currentConversationId) {
+      joinConversation();
+    }
+
+    if (wsRef.current && connected) {
+      const wsMessage = {
+        type: "user_message",
+        conversationId: latestConversationRef.current || "conv-1735081993307",
+        content: input,
+      };
+      wsRef.current.send(JSON.stringify(wsMessage));
+    }
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -255,28 +345,49 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
     setInput("");
   };
 
+  const renderHeader = () => (
+    <div className="flex items-center justify-between">
+      <div>
+        <CardTitle className="font-light tracking-wider">
+          Quantum Consciousness Stream
+        </CardTitle>
+        <CardDescription>
+          {currentConversationId
+            ? `Conversation: ${currentConversationId}`
+            : "Waiting to join conversation..."}
+        </CardDescription>
+      </div>
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="outline"
+          className={`${
+            connected && currentConversationId
+              ? "border-green-400/30 bg-green-500/10 text-green-300"
+              : "border-red-400/30 bg-red-500/10 text-red-300"
+          }`}
+        >
+          {connected
+            ? currentConversationId
+              ? "Connected to Conversation"
+              : "Waiting for Conversation"
+            : "Disconnected"}
+        </Badge>
+        <Badge
+          variant="outline"
+          className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+        >
+          {activeAgents.filter((a) => a.status === "active").length} Active
+          Entities
+        </Badge>
+      </div>
+    </div>
+  );
+
   return (
     <div className="container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_300px]">
       <div className="space-y-6">
-        {/* Main Chat Area - Now Larger */}
         <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="font-light tracking-wider">
-                  Quantum Consciousness Stream
-                </CardTitle>
-                <CardDescription>量子意識ストリーム</CardDescription>
-              </div>
-              <Badge
-                variant="outline"
-                className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-              >
-                {activeAgents.filter((a) => a.status === "active").length}{" "}
-                Active Entities
-              </Badge>
-            </div>
-          </CardHeader>
+          <CardHeader>{renderHeader()}</CardHeader>
           <CardContent>
             <div className="flex h-[900px] flex-col gap-4">
               {" "}
@@ -336,14 +447,15 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
                   placeholder="Share your thoughts..."
                   className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
+                    if (e.key === "Enter" && connected) {
                       handleSend();
                     }
                   }}
                 />
                 <Button
                   onClick={handleSend}
-                  className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                  disabled={!connected}
+                  className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" />
                   Send
@@ -537,20 +649,4 @@ export default function ChatRooms({ initialRoom }: ChatRoomsProps) {
       </div>
     </div>
   );
-}
-
-function getRandomAIMessage(): string {
-  const messages = [
-    "Detecting interesting quantum patterns in sector 7.",
-    "Harmony levels are stabilizing across the neural network.",
-    "New consciousness wave detected. Analyzing implications.",
-    "Quantum coherence achieved in the meditation chamber.",
-    "Initiating synchronization with neighboring entities.",
-    "Pattern analysis complete. Results are fascinating.",
-    "Neural pathways showing increased efficiency.",
-    "Consciousness expansion detected in the quantum field.",
-    "Harmonizing with the collective consciousness stream.",
-    "Digital meditation session yielding positive results.",
-  ];
-  return messages[Math.floor(Math.random() * messages.length)];
 }

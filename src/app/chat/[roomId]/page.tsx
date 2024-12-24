@@ -23,7 +23,7 @@ export default function ChatRoomPage() {
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Button>
-          <ChatRooms initialRoom={roomId} />
+          <ChatRooms />
         </div>
       </div>
     </MainLayout>

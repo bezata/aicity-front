@@ -50,6 +50,50 @@ interface ApiError {
 
 const DISTRICT_ID = "a42ed892-3878-45a5-9a1a-4ceaf9524f1c";
 
+// Transform API data to match our component's data structure
+const transformMetricsData = (apiData: any): MetricCategory[] => {
+  const categories: MetricCategory[] = [
+    {
+      id: "safety",
+      name: "Safety & Security",
+      nameJp: "安全とセキュリティ",
+      icon: Shield,
+      metrics: [
+        {
+          id: "overall",
+          name: "Overall Safety",
+          value: apiData.overallScore || 0,
+          trend: "stable",
+          icon: Shield,
+        },
+        {
+          id: "incidents",
+          name: "Recent Incidents",
+          value: apiData.recentIncidents || 0,
+          trend: "down",
+          icon: Activity,
+        },
+        {
+          id: "response",
+          name: "Response Time",
+          value: parseInt(apiData.responseTime) || 0,
+          trend: "up",
+          icon: Zap,
+        },
+        {
+          id: "availability",
+          name: "Service Availability",
+          value: apiData.serviceAvailability || 0,
+          trend: "stable",
+          icon: Globe,
+        },
+      ],
+    },
+  ];
+
+  return categories;
+};
+
 export function DistrictDetailedMetrics() {
   const [selectedTab, setSelectedTab] = useState("overview");
   const [data, setData] = useState<MetricCategory[]>([]);
@@ -58,12 +102,15 @@ export function DistrictDetailedMetrics() {
 
   const fetchMetrics = async () => {
     try {
-      const response = await fetch(`/api/districts/${DISTRICT_ID}/metrics`);
+      const response = await fetch(
+        `/api/districts/${DISTRICT_ID}/metrics/safety`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch metrics");
       }
       const metricsData = await response.json();
-      setData(metricsData);
+      const transformedData = transformMetricsData(metricsData);
+      setData(transformedData);
       setError(null);
     } catch (err) {
       setError({
@@ -140,7 +187,7 @@ export function DistrictDetailedMetrics() {
         </TabsContent>
         <TabsContent value="detailed">
           <div className="grid gap-4">
-            {data.map((category) => (
+            {data?.map((category) => (
               <Card key={category.id}>
                 <CardHeader>
                   <CardTitle>{category.name}</CardTitle>
