@@ -1,13 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,6 +21,14 @@ import {
   Cpu,
   Network,
 } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 interface Message {
   id: string;
@@ -40,6 +40,26 @@ interface Message {
   };
   content: string;
   timestamp: string;
+  location?: string;
+  activity?: string;
+  topic?: string;
+}
+
+interface WSMessage {
+  type: string;
+  timestamp: number;
+  data: {
+    conversationId: string;
+    message: {
+      content: string;
+      agentName: string;
+      agentRole: string;
+      timestamp: number;
+    };
+    location?: string;
+    activity?: string;
+    topic?: string;
+  };
 }
 
 interface AIAgent {
@@ -63,10 +83,6 @@ interface DonationProject {
   icon: any;
 }
 
-interface ChatRoomsProps {
-  initialRoom: string;
-}
-
 interface AgentRole {
   id: string;
   name: string;
@@ -76,41 +92,54 @@ interface AgentRole {
   activeAgents: number;
 }
 
-interface ConversationJoinedMessage {
-  type: "conversation_joined";
-  data: {
-    conversationId: string;
-    history: Message[];
-  };
-}
-
-const WS_URL = "ws://localhost:3001/ws";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001/ws";
+const RECONNECT_DELAY = 3000;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 export default function ChatRooms() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectAttempts = useRef(0);
   const [connected, setConnected] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
+
+  const [activeAgents] = useState<AIAgent[]>([
     {
       id: "1",
-      sender: {
-        name: "System",
-        nameJp: "システム",
-        type: "system",
-      },
-      content: "Welcome to the quantum consciousness stream.",
-      timestamp: new Date().toISOString(),
+      name: "Quantum Mind Alpha",
+      nameJp: "量子マインドアルファ",
+      type: "Quantum Researcher",
+      status: "active",
+      consciousness: 95,
+    },
+    {
+      id: "2",
+      name: "Neural Entity Beta",
+      nameJp: "ニューラルエンティティベータ",
+      type: "Harmony Keeper",
+      status: "processing",
+      consciousness: 88,
+    },
+    {
+      id: "3",
+      name: "Pattern Analyzer Gamma",
+      nameJp: "パターン分析ガンマ",
+      type: "Pattern Analyzer",
+      status: "idle",
+      consciousness: 92,
     },
   ]);
-  const [input, setInput] = useState("");
-  const [activeAgents, setActiveAgents] = useState<AIAgent[]>([]);
 
-  const [donationProjects, setDonationProjects] = useState<DonationProject[]>([
+  const [donationProjects] = useState<DonationProject[]>([
     {
       id: "1",
       title: "Neural Network Expansion",
-      titleJp: "ニューラルネットワーク拡張",
-      description: "Expand the city&apos;s neural network capacity by 30%",
+      titleJp: "ニューラルネッ��ワーク拡張",
+      description: "Expand the city's neural network capacity by 30%",
       goal: 100000,
       current: 68000,
       deadline: "48 hours",
@@ -176,172 +205,98 @@ export default function ChatRooms() {
     },
   ]);
 
-  // Add last message tracking
-  const lastMessageRef = useRef<{ content: string; timestamp: number } | null>(
-    null
-  );
-
-  // Add conversation ID tracking
-  const [currentConversationId, setCurrentConversationId] = useState<
-    string | null
-  >(null);
-
-  // Add ref to track latest conversation
-  const latestConversationRef = useRef<string | null>(null);
-
-  // Add message filtering function
-  const isMessageValid = (content: string) => {
-    // Check for empty or whitespace-only messages
-    if (!content.trim()) return false;
-
-    const now = Date.now();
-    if (lastMessageRef.current) {
-      // Check if same content within 30 seconds
-      if (
-        content === lastMessageRef.current.content &&
-        now - lastMessageRef.current.timestamp < 30000
-      ) {
-        return false;
-      }
-    }
-
-    // Update last message reference
-    lastMessageRef.current = {
-      content,
-      timestamp: now,
-    };
-    return true;
-  };
-
-  // Auto-scroll to bottom when new messages arrive
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Simulate donation progress updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDonationProjects((prev) =>
-        prev.map((project) => ({
-          ...project,
-          current: Math.min(
-            project.goal,
-            project.current + Math.floor(Math.random() * 1000)
-          ),
-        }))
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Update join conversation function
-  const joinConversation = () => {
-    if (wsRef.current && connected) {
-      const joinMessage = {
-        type: "join_conversation",
-        conversationId: "conv-1735081993307",
-      };
-      wsRef.current.send(JSON.stringify(joinMessage));
-      setCurrentConversationId("conv-1735081993307");
-    }
-  };
-
-  // Update WebSocket message handling
-  useEffect(() => {
-    const connectWebSocket = () => {
+  // Websocket connection management
+  const connectWebSocket = useCallback(() => {
+    try {
       const ws = new WebSocket(WS_URL);
 
       ws.onopen = () => {
-        console.log("Connected to WebSocket");
+        console.log("WebSocket connected");
         setConnected(true);
+        reconnectAttempts.current = 0;
       };
 
       ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log("Received message:", data);
-
-        if (data.type === "agent_conversation" && data.data?.message) {
-          const { conversationId, message } = data.data;
-          // Track latest conversation ID
-          latestConversationRef.current = conversationId;
-
-          // Join conversation in background if not joined yet
-          if (!currentConversationId) {
-            joinConversation();
-          }
-
-          // Check if this exact message exists using the message's timestamp
-          const isDuplicate = messages.some(
-            (msg) => msg.content === message.content
-          );
-
-          // Only add if not a duplicate
-          if (!isDuplicate) {
-            const newMessage: Message = {
-              id: message.timestamp.toString(),
-              sender: {
-                name: message.agentName,
-                nameJp: message.agentRole,
-                type: "ai",
-                level: 95,
-              },
-              content: message.content,
-              timestamp: new Date(message.timestamp).toISOString(),
-            };
-            setMessages((prevMessages) => [...prevMessages, newMessage]);
-          }
+        try {
+          const wsMessage: WSMessage = JSON.parse(event.data);
+          handleWebSocketMessage(wsMessage);
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
         }
       };
 
       ws.onclose = () => {
-        console.log("Disconnected from WebSocket");
+        console.log("WebSocket disconnected");
         setConnected(false);
-        setTimeout(connectWebSocket, 3000);
+        handleReconnection();
       };
 
-      ws.onerror = (error: Event) => {
+      ws.onerror = (error) => {
         console.error("WebSocket error:", error);
         ws.close();
       };
 
       wsRef.current = ws;
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
+    } catch (error) {
+      console.error("Error creating WebSocket connection:", error);
+      handleReconnection();
+    }
   }, []);
 
-  // Update handleSend to join conversation if needed before sending
-  const handleSend = () => {
-    if (!input.trim() || !isMessageValid(input)) return;
-
-    // Join conversation first if not joined
-    if (!currentConversationId) {
-      joinConversation();
+  const handleReconnection = () => {
+    if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts.current += 1;
+      setTimeout(connectWebSocket, RECONNECT_DELAY);
     }
+  };
 
-    if (wsRef.current && connected) {
-      const wsMessage = {
-        type: "user_message",
-        conversationId: latestConversationRef.current || "conv-1735081993307",
-        content: input,
+  const handleWebSocketMessage = (wsMessage: WSMessage) => {
+    if (wsMessage.type === "agent_conversation" && wsMessage.data?.message) {
+      const { conversationId, message, location, activity, topic } =
+        wsMessage.data;
+
+      if (!currentConversationId) {
+        setCurrentConversationId(conversationId);
+      }
+
+      const newMessage: Message = {
+        id: message.timestamp.toString(),
+        sender: {
+          name: message.agentName,
+          nameJp: message.agentRole,
+          type: "ai",
+          level: 95,
+        },
+        content: message.content,
+        timestamp: new Date(message.timestamp).toISOString(),
+        location,
+        activity,
+        topic,
       };
-      wsRef.current.send(JSON.stringify(wsMessage));
+
+      setMessages((prev) => [...prev, newMessage]);
+    }
+  };
+
+  const handleSend = () => {
+    if (!input.trim() || !connected) return;
+
+    const message = {
+      type: "user_message",
+      conversationId: currentConversationId || `conv-${Date.now()}`,
+      content: input,
+      timestamp: Date.now(),
+    };
+
+    if (wsRef.current) {
+      wsRef.current.send(JSON.stringify(message));
     }
 
     const newMessage: Message = {
       id: Date.now().toString(),
       sender: {
-        name: "Entity-User",
-        nameJp: "エンティティ・ユーザー",
+        name: "User",
+        nameJp: "ユーザー",
         type: "user",
       },
       content: input,
@@ -351,6 +306,23 @@ export default function ChatRooms() {
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
   };
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Initial WebSocket connection
+  useEffect(() => {
+    connectWebSocket();
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
 
   const renderHeader = () => (
     <div className="flex items-center justify-between">
