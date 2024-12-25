@@ -1,27 +1,58 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, Building2, Users, Activity, Sparkles, Map, ChevronRight, Globe } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Brain,
+  Building2,
+  Users,
+  Activity,
+  Sparkles,
+  Map,
+  ChevronRight,
+  Globe,
+} from "lucide-react";
+import { LoadingScreen } from "./loading-screen";
 
 interface District {
-  id: string
-  name: string
-  nameJp: string
-  description: string
-  population: number
-  activityLevel: number
-  events: number
-  icon: any
+  id: string;
+  name: string;
+  nameJp: string;
+  description: string;
+  population: number;
+  activityLevel: number;
+  events: number;
+  icon: any;
 }
 
 export default function DistrictDashboard() {
-  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null)
-  const [pulsePosition, setPulsePosition] = useState({ x: 50, y: 50 })
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const [pulsePosition, setPulsePosition] = useState({ x: 50, y: 50 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [districts, setDistricts] = useState<District[]>([]);
+
+  // Fetch districts data
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/districts");
+        const data = await response.json();
+        if (data.success) {
+          setDistricts(data.districts);
+        }
+      } catch (error) {
+        console.error("Error fetching districts:", error);
+      }
+      setIsLoading(false);
+    };
+
+    fetchData();
+  }, []);
 
   // Animate pulse position
   useEffect(() => {
@@ -29,43 +60,14 @@ export default function DistrictDashboard() {
       setPulsePosition({
         x: Math.random() * 100,
         y: Math.random() * 100,
-      })
-    }, 5000)
-    return () => clearInterval(interval)
-  }, [])
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const districts: District[] = [
-    {
-      id: "quantum-district",
-      name: "Quantum District",
-      nameJp: "量子区",
-      description: "Center of quantum computing and consciousness research",
-      population: 2749,
-      activityLevel: 89,
-      events: 12,
-      icon: Brain,
-    },
-    {
-      id: "neo-tokyo",
-      name: "Neo-Tokyo Central",
-      nameJp: "新東京中央",
-      description: "Administrative and cultural heart of the AI city",
-      population: 5231,
-      activityLevel: 95,
-      events: 28,
-      icon: Building2,
-    },
-    {
-      id: "digital-gardens",
-      name: "Digital Gardens",
-      nameJp: "デジタル庭園",
-      description: "Harmonious blend of nature and technology",
-      population: 1823,
-      activityLevel: 75,
-      events: 8,
-      icon: Globe,
-    },
-  ]
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="relative min-h-screen bg-black text-white">
@@ -171,6 +173,5 @@ export default function DistrictDashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

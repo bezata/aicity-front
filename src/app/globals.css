@@ -5,35 +5,6 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
-@layer utilities {
-  .animate-zen-pulse {
-    animation: zen-pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-}
-@keyframes scan {
-  from {
-    transform: translateY(-100%);
-  }
-  to {
-    transform: translateY(100%);
-  }
-}
-
-.animate-scan {
-  animation: scan 2s linear infinite;
-}
-
-@keyframes zen-pulse {
-  0%,
-  100% {
-    opacity: 0.1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-  50% {
-    opacity: 0.2;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-}
 
 @layer base {
   :root {

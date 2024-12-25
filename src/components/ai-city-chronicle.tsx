@@ -29,6 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { LoadingScreen } from "./loading-screen";
 
 interface Story {
   id: string;
@@ -109,10 +110,12 @@ export default function AICityChronicle() {
   const [events, setEvents] = useState<Event[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch data from APIs
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         const [newsRes, eventsRes, incidentsRes, budgetsRes] =
           await Promise.all([
@@ -143,8 +146,10 @@ export default function AICityChronicle() {
         setEvents(eventsData.data);
         setIncidents(incidentsData.data);
         setBudgets(budgetsData.data);
+        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
+        setIsLoading(false);
       }
     };
 
@@ -229,6 +234,10 @@ export default function AICityChronicle() {
       }));
     }
   };
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black text-white flex items-center justify-center">

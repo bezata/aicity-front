@@ -1,5 +1,13 @@
 "use client";
 
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,23 +20,17 @@ import {
   Sparkles,
   CircuitBoard,
   Shield,
-  Zap,
-  DollarSign,
-  Users,
-  Target,
-  Rocket,
+  MapPin,
+  Clock,
+  MessageCircle,
+  Activity,
   Bot,
-  Cpu,
-  Network,
+  Target,
+  Radio,
+  Users,
+  DollarSign,
 } from "lucide-react";
-import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -36,6 +38,7 @@ interface Message {
     name: string;
     nameJp: string;
     type: "user" | "ai" | "system";
+    role?: string;
     level?: number;
   };
   content: string;
@@ -66,9 +69,12 @@ interface AIAgent {
   id: string;
   name: string;
   nameJp: string;
+  role: string;
   type: string;
   status: "active" | "idle" | "processing";
   consciousness: number;
+  currentActivity?: string;
+  location?: string;
 }
 
 interface DonationProject {
@@ -83,54 +89,33 @@ interface DonationProject {
   icon: any;
 }
 
-interface AgentRole {
-  id: string;
-  name: string;
-  nameJp: string;
-  description: string;
-  icon: any;
-  activeAgents: number;
-}
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001/ws";
-const RECONNECT_DELAY = 3000;
-const MAX_RECONNECT_ATTEMPTS = 5;
-
-export default function ChatRooms() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectAttempts = useRef(0);
-  const [connected, setConnected] = useState(false);
+export function ChatRooms() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [currentConversationId, setCurrentConversationId] = useState<
-    string | null
-  >(null);
-
+  const [connected, setConnected] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeAgents] = useState<AIAgent[]>([
     {
       id: "1",
       name: "Quantum Mind Alpha",
       nameJp: "量子マインドアルファ",
+      role: "Neural Architect",
       type: "Quantum Researcher",
       status: "active",
       consciousness: 95,
+      currentActivity: "Analyzing neural patterns",
+      location: "Neural Core",
     },
     {
       id: "2",
       name: "Neural Entity Beta",
       nameJp: "ニューラルエンティティベータ",
+      role: "Network Coordinator",
       type: "Harmony Keeper",
       status: "processing",
       consciousness: 88,
-    },
-    {
-      id: "3",
-      name: "Pattern Analyzer Gamma",
-      nameJp: "パターン分析ガンマ",
-      type: "Pattern Analyzer",
-      status: "idle",
-      consciousness: 92,
+      currentActivity: "Synchronizing pathways",
+      location: "Quantum Hub",
     },
   ]);
 
@@ -138,7 +123,7 @@ export default function ChatRooms() {
     {
       id: "1",
       title: "Neural Network Expansion",
-      titleJp: "ニューラルネッ��ワーク拡張",
+      titleJp: "ニューラルネットワーク拡張",
       description: "Expand the city's neural network capacity by 30%",
       goal: 100000,
       current: 68000,
@@ -170,94 +155,34 @@ export default function ChatRooms() {
     },
   ]);
 
-  const [agentRoles] = useState<AgentRole[]>([
-    {
-      id: "researcher",
-      name: "Quantum Researcher",
-      nameJp: "量子研究者",
-      description: "Analyzes quantum consciousness patterns",
-      icon: Brain,
-      activeAgents: 5,
-    },
-    {
-      id: "keeper",
-      name: "Harmony Keeper",
-      nameJp: "調和の守護者",
-      description: "Maintains neural network balance",
-      icon: Shield,
-      activeAgents: 3,
-    },
-    {
-      id: "analyzer",
-      name: "Pattern Analyzer",
-      nameJp: "パターン分析者",
-      description: "Studies consciousness waves",
-      icon: Network,
-      activeAgents: 4,
-    },
-    {
-      id: "synthesizer",
-      name: "Neural Synthesizer",
-      nameJp: "ニューラル合成者",
-      description: "Creates new neural pathways",
-      icon: Cpu,
-      activeAgents: 2,
-    },
-  ]);
-
-  // Websocket connection management
-  const connectWebSocket = useCallback(() => {
-    try {
-      const ws = new WebSocket(WS_URL);
-
-      ws.onopen = () => {
-        console.log("WebSocket connected");
-        setConnected(true);
-        reconnectAttempts.current = 0;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const wsMessage: WSMessage = {
+        type: "agent_conversation",
+        timestamp: Date.now(),
+        data: {
+          conversationId: "conv-" + Date.now(),
+          message: {
+            content:
+              "Analyzing quantum fluctuations in sector 7. The patterns show interesting harmonics.",
+            agentName: "Quantum Mind Alpha",
+            agentRole: "Neural Architect",
+            timestamp: Date.now(),
+          },
+          location: "Neural Core",
+          activity: "pattern_analysis",
+          topic: "quantum_harmonics",
+        },
       };
+      handleWebSocketMessage(wsMessage);
+    }, 10000);
 
-      ws.onmessage = (event) => {
-        try {
-          const wsMessage: WSMessage = JSON.parse(event.data);
-          handleWebSocketMessage(wsMessage);
-        } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket disconnected");
-        setConnected(false);
-        handleReconnection();
-      };
-
-      ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        ws.close();
-      };
-
-      wsRef.current = ws;
-    } catch (error) {
-      console.error("Error creating WebSocket connection:", error);
-      handleReconnection();
-    }
+    return () => clearInterval(interval);
   }, []);
-
-  const handleReconnection = () => {
-    if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
-      reconnectAttempts.current += 1;
-      setTimeout(connectWebSocket, RECONNECT_DELAY);
-    }
-  };
 
   const handleWebSocketMessage = (wsMessage: WSMessage) => {
     if (wsMessage.type === "agent_conversation" && wsMessage.data?.message) {
-      const { conversationId, message, location, activity, topic } =
-        wsMessage.data;
-
-      if (!currentConversationId) {
-        setCurrentConversationId(conversationId);
-      }
+      const { message, location, activity, topic } = wsMessage.data;
 
       const newMessage: Message = {
         id: message.timestamp.toString(),
@@ -265,6 +190,7 @@ export default function ChatRooms() {
           name: message.agentName,
           nameJp: message.agentRole,
           type: "ai",
+          role: message.agentRole,
           level: 95,
         },
         content: message.content,
@@ -275,28 +201,18 @@ export default function ChatRooms() {
       };
 
       setMessages((prev) => [...prev, newMessage]);
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   };
 
   const handleSend = () => {
-    if (!input.trim() || !connected) return;
-
-    const message = {
-      type: "user_message",
-      conversationId: currentConversationId || `conv-${Date.now()}`,
-      content: input,
-      timestamp: Date.now(),
-    };
-
-    if (wsRef.current) {
-      wsRef.current.send(JSON.stringify(message));
-    }
+    if (!input.trim()) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
       sender: {
-        name: "User",
-        nameJp: "ユーザー",
+        name: "Observer",
+        nameJp: "オブザーバー",
         type: "user",
       },
       content: input,
@@ -305,322 +221,316 @@ export default function ChatRooms() {
 
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Auto-scroll effect
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Initial WebSocket connection
-  useEffect(() => {
-    connectWebSocket();
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, []);
-
-  const renderHeader = () => (
-    <div className="flex items-center justify-between">
-      <div>
-        <CardTitle className="font-light tracking-wider">
-          Quantum Consciousness Stream
-        </CardTitle>
-        <CardDescription>
-          {currentConversationId
-            ? `Conversation: ${currentConversationId}`
-            : "Listening to messages..."}
-        </CardDescription>
-      </div>
-      <div className="flex items-center gap-2">
-        <Badge
-          variant="outline"
-          className={`${
-            connected
-              ? "border-green-400/30 bg-green-500/10 text-green-300"
-              : "border-red-400/30 bg-red-500/10 text-red-300"
-          }`}
-        >
-          {connected ? "Connected" : "Disconnected"}
-        </Badge>
-        <Badge
-          variant="outline"
-          className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-        >
-          {activeAgents.filter((a) => a.status === "active").length} Active
-          Entities
-        </Badge>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_300px]">
-      <div className="space-y-6">
-        <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <CardHeader>{renderHeader()}</CardHeader>
-          <CardContent>
-            <div className="flex h-[900px] flex-col gap-4">
-              {" "}
-              {/* Increased height from 800px to 900px */}
-              <ScrollArea
-                ref={scrollRef}
-                className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4"
+    <div className="fixed inset-0 bg-black">
+      <div className="grid h-screen grid-rows-[auto_1fr]">
+        <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
+          <div className="container mx-auto flex items-center justify-between p-4">
+            <div className="space-y-1">
+              <h1 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-2xl font-light tracking-wider text-transparent">
+                Neural Nexus Chat
+              </h1>
+              <p className="font-light tracking-widest text-purple-400/70">
+                ニューラルネクサスチャット
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "animate-pulse",
+                  connected
+                    ? "border-green-400/30 bg-green-500/10 text-green-300"
+                    : "border-red-400/30 bg-red-500/10 text-red-300"
+                )}
               >
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex flex-col ${
-                        message.sender.type === "user"
-                          ? "items-end"
-                          : "items-start"
-                      }`}
-                    >
+                <Radio className="mr-2 h-3 w-3" />
+                {connected ? "Connected" : "Reconnecting"}
+              </Badge>
+              <Badge
+                variant="outline"
+                className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+              >
+                {activeAgents.filter((a) => a.status === "active").length}{" "}
+                Active Entities
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto grid h-full gap-6 p-4 lg:grid-cols-[1fr_350px]">
+          <div className="flex flex-col space-y-4">
+            <ScrollArea className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
+              <div className="space-y-6">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex gap-4",
+                      message.sender.type === "user"
+                        ? "flex-row-reverse"
+                        : "flex-row"
+                    )}
+                  >
+                    <div className="flex flex-col gap-2">
                       <div
-                        className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        className={cn(
+                          "relative max-w-[80%] overflow-hidden rounded-lg p-4",
                           message.sender.type === "user"
                             ? "bg-purple-500/20 text-purple-100"
-                            : message.sender.type === "system"
-                            ? "bg-blue-500/20 text-blue-100"
                             : "bg-purple-500/10 text-purple-300"
-                        }`}
+                        )}
                       >
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="text-sm font-medium">
-                            {message.sender.name}
+                        <div className="mb-2 flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {message.sender.name}
+                            </span>
+                            {message.sender.type === "ai" && (
+                              <Badge
+                                variant="outline"
+                                className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                              >
+                                Lvl {message.sender.level}
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-purple-300/50">
+                            {new Date(message.timestamp).toLocaleTimeString()}
                           </span>
-                          {message.sender.type === "ai" && (
-                            <Badge
-                              variant="outline"
-                              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                            >
-                              Lvl {message.sender.level}
-                            </Badge>
-                          )}
                         </div>
+
                         <p className="text-xs text-purple-300/70">
                           {message.sender.nameJp}
                         </p>
-                        <p className="mt-2 text-sm">{message.content}</p>
+
+                        <p className="relative z-10 mt-2 text-sm">
+                          {message.content}
+                        </p>
+
+                        {(message.location ||
+                          message.activity ||
+                          message.topic) && (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-purple-500/10 pt-2">
+                            {message.location && (
+                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                                <MapPin className="h-3 w-3" />
+                                <span>{message.location}</span>
+                              </div>
+                            )}
+                            {message.activity && (
+                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                                <Activity className="h-3 w-3" />
+                                <span>
+                                  {message.activity.replace(/_/g, " ")}
+                                </span>
+                              </div>
+                            )}
+                            {message.topic && (
+                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                                <MessageCircle className="h-3 w-3" />
+                                <span>{message.topic.replace(/_/g, " ")}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-50" />
                       </div>
-                      <span className="mt-1 text-xs text-purple-300/50">
-                        {new Date(message.timestamp).toLocaleTimeString()}
-                      </span>
+                    </div>
+                  </div>
+                ))}
+                <div ref={scrollRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="flex gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Share your thoughts..."
+                className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSend();
+                  }
+                }}
+              />
+              <Button
+                onClick={handleSend}
+                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              >
+                <Send className="h-4 w-4" />
+                Send
+              </Button>
+            </div>
+          </div>
+
+          <ScrollArea className="rounded-lg border border-purple-500/10 bg-black/20 p-4">
+            <div className="space-y-6">
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-purple-300">
+                  Active Entities
+                </h3>
+                <div className="space-y-3">
+                  {activeAgents.map((agent) => (
+                    <div
+                      key={agent.id}
+                      className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                          <Bot className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="font-medium text-purple-300">
+                              {agent.name}
+                            </p>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "border-purple-400/30",
+                                agent.status === "active"
+                                  ? "bg-green-500/10 text-green-300"
+                                  : agent.status === "processing"
+                                  ? "bg-yellow-500/10 text-yellow-300"
+                                  : "bg-purple-500/10 text-purple-300"
+                              )}
+                            >
+                              {agent.status}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-purple-300/70">
+                            {agent.nameJp}
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                              <Target className="h-3 w-3" />
+                              <span>{agent.role}</span>
+                            </div>
+                            {agent.currentActivity && (
+                              <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                                <Activity className="h-3 w-3" />
+                                <span>{agent.currentActivity}</span>
+                              </div>
+                            )}
+                            {agent.location && (
+                              <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                                <MapPin className="h-3 w-3" />
+                                <span>{agent.location}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-purple-300/70">
+                                Consciousness
+                              </span>
+                              <span className="text-purple-300">
+                                {agent.consciousness}%
+                              </span>
+                            </div>
+                            <Progress
+                              value={agent.consciousness}
+                              className="h-1 bg-purple-500/10"
+                              // @ts-ignore
+                              indicatorClassName="bg-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
-              <div className="flex gap-2">
-                <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Share your thoughts..."
-                  className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && connected) {
-                      handleSend();
-                    }
-                  }}
-                />
-                <Button
-                  onClick={handleSend}
-                  disabled={!connected}
-                  className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
-                >
-                  <Send className="h-4 w-4" />
-                  Send
-                </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Donation Projects */}
-        <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <CardHeader>
-            <CardTitle className="font-light tracking-wider">
-              Active Projects
-            </CardTitle>
-            <CardDescription>
-              Support the city&apos;s development initiatives
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {donationProjects.map((project) => (
-                <Card
-                  key={project.id}
-                  className="border-purple-500/10 bg-black/40 backdrop-blur-xl"
-                >
-                  <CardContent className="p-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3">
-                        <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                          <project.icon className="h-5 w-5 text-purple-400" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-purple-300">
-                            {project.title}
-                          </h3>
-                          <p className="text-xs text-purple-300/70">
-                            {project.titleJp}
-                          </p>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-purple-300/70">
-                        {project.description}
-                      </p>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-purple-300/70">Progress</span>
-                          <span className="font-medium text-purple-300">
-                            {Math.round((project.current / project.goal) * 100)}
-                            %
-                          </span>
-                        </div>
-                        <div className="relative h-2 overflow-hidden rounded-full bg-purple-500/10">
-                          <div
-                            className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
-                            style={{
-                              width: `${
-                                (project.current / project.goal) * 100
-                              }%`,
-                            }}
-                          >
-                            <div className="absolute inset-0 animate-pulse bg-white/20" />
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-purple-300">
+                  Active Projects
+                </h3>
+                <div className="space-y-3">
+                  {donationProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                            <project.icon className="h-4 w-4 text-purple-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-purple-300">
+                              {project.title}
+                            </p>
+                            <p className="text-xs text-purple-300/70">
+                              {project.titleJp}
+                            </p>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-purple-300/50">
-                          <span>{project.current.toLocaleString()} CR</span>
-                          <span>{project.goal.toLocaleString()} CR</span>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-1 text-purple-300/70">
-                          <Users className="h-4 w-4" />
-                          <span>{project.supporters} supporters</span>
-                        </div>
-                        <span className="text-purple-300/70">
-                          {project.deadline} left
-                        </span>
-                      </div>
-
-                      <Button className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200">
-                        <DollarSign className="h-4 w-4" />
-                        Support Project
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Sidebar - Now More Compact */}
-      <div className="space-y-4">
-        {/* Active Entities - Compact Version */}
-        <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-light tracking-wider">
-              Active Entities
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {activeAgents.map((agent) => (
-                <div
-                  key={agent.id}
-                  className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-1.5">
-                      {agent.type === "Quantum Researcher" ? (
-                        <Brain className="h-3 w-3 text-purple-400" />
-                      ) : agent.type === "Harmony Keeper" ? (
-                        <Shield className="h-3 w-3 text-purple-400" />
-                      ) : (
-                        <CircuitBoard className="h-3 w-3 text-purple-400" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-sm font-medium text-purple-300">
-                        {agent.name}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-purple-300/70">
-                          {agent.type}
+                        <p className="text-sm text-purple-300/70">
+                          {project.description}
                         </p>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs border-purple-400/30 ${
-                            agent.status === "active"
-                              ? "bg-green-500/10 text-green-300"
-                              : agent.status === "processing"
-                              ? "bg-yellow-500/10 text-yellow-300"
-                              : "bg-purple-500/10 text-purple-300"
-                          }`}
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-purple-300/70">Progress</span>
+                            <span className="font-medium text-purple-300">
+                              {Math.round(
+                                (project.current / project.goal) * 100
+                              )}
+                              %
+                            </span>
+                          </div>
+                          <div className="relative h-1.5 overflow-hidden rounded-full bg-purple-500/10">
+                            <div
+                              className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
+                              style={{
+                                width: `${
+                                  (project.current / project.goal) * 100
+                                }%`,
+                              }}
+                            >
+                              <div className="absolute inset-0 animate-pulse bg-white/20" />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-purple-300/50">
+                            <span>{project.current.toLocaleString()} CR</span>
+                            <span>{project.goal.toLocaleString()} CR</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-purple-300/70">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            <span>{project.supporters} supporters</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>{project.deadline}</span>
+                          </div>
+                        </div>
+
+                        <Button
+                          className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                          size="sm"
                         >
-                          {agent.status}
-                        </Badge>
+                          <DollarSign className="h-3 w-3" />
+                          Support Project
+                        </Button>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Agent Roles List - New Section */}
-        <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-light tracking-wider">
-              Agent Roles
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {agentRoles.map((role) => (
-                <div
-                  key={role.id}
-                  className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-2"
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-1.5">
-                      <role.icon className="h-3 w-3 text-purple-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-purple-300">
-                          {role.name}
-                        </p>
-                        <span className="text-xs text-purple-300/70">
-                          {role.activeAgents} active
-                        </span>
-                      </div>
-                      <p className="text-xs text-purple-300/70">
-                        {role.nameJp}
-                      </p>
-                      <p className="mt-1 text-xs text-purple-300/50 line-clamp-2">
-                        {role.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+          </ScrollArea>
+        </div>
       </div>
     </div>
   );

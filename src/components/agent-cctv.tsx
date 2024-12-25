@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "./main-layout";
+import { LoadingScreen } from "./loading-screen";
 
 interface LogEntry {
   id: string;
@@ -54,18 +55,52 @@ interface AgentActivity {
   logs: LogEntry[];
 }
 
+interface Trait {
+  analyticalThinking: number;
+  creativity: number;
+  empathy: number;
+  curiosity: number;
+  enthusiasm: number;
+}
+
+interface EmotionalRange {
+  min: number;
+  max: number;
+}
+
 interface AIAgent {
   id: string;
   name: string;
-  nameJp: string;
   role: string;
-  roleJp: string;
-  status: "active" | "idle" | "maintenance";
-  avatar: string;
-  currentActivity: AgentActivity;
+  personality: string;
+  systemPrompt: string;
+  interests: string[];
+  preferredStyle: string;
+  traits: Trait;
+  memoryWindowSize: number;
+  emotionalRange: EmotionalRange;
 }
 
-// Activity generation functions
+interface AgentsResponse {
+  custom: AIAgent[];
+  city: AIAgent[];
+  management: AIAgent[];
+  resident: AIAgent[];
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+interface CCTVObservation {
+  narrative: string;
+  timestamp: number;
+  location: string;
+  metrics: Record<string, any>;
+  area: string;
+}
+
 const generateProcessingActivities = (
   agentName: string,
   agentNameJp: string
@@ -124,111 +159,6 @@ const generateCommunicationActivities = (
   },
 ];
 
-const agents: AIAgent[] = [
-  {
-    id: "qa1",
-    name: "Quantum Alpha",
-    nameJp: "クァンタムアルファ",
-    role: "Neural Network Architect",
-    roleJp: "ニューラルネットワークアーキテクト",
-    status: "active",
-    avatar: "/placeholder.svg?height=100&width=100",
-    currentActivity: {
-      id: "act1",
-      timestamp: new Date().toISOString(),
-      type: "analyze",
-      description: "Optimizing neural pathways in sector 7",
-      descriptionJp: "セクター7のニューラルパスウェイを最適化",
-      location: "Neural Core Chamber",
-      locationJp: "ニューラルコアチャンバー",
-      metrics: {
-        cpuLoad: 87,
-        memoryUsage: 92,
-        networkLatency: 5,
-      },
-      logs: [],
-    },
-  },
-  {
-    id: "qb2",
-    name: "Quantum Beta",
-    nameJp: "クァンタムベータ",
-    role: "Resource Distributor",
-    roleJp: "リソースディストリビューター",
-    status: "active",
-    avatar: "/placeholder.svg?height=100&width=100",
-    currentActivity: {
-      id: "act2",
-      timestamp: new Date().toISOString(),
-      type: "process",
-      description: "Balancing power distribution in district 3",
-      descriptionJp: "地区3の電力分配を調整中",
-      location: "Power Distribution Hub",
-      locationJp: "電力分配ハブ",
-      metrics: {
-        cpuLoad: 65,
-        memoryUsage: 78,
-        networkLatency: 8,
-      },
-      logs: [],
-    },
-  },
-  {
-    id: "qg3",
-    name: "Quantum Gamma",
-    nameJp: "クァンタムガンマ",
-    role: "System Maintainer",
-    roleJp: "システムメンテナー",
-    status: "maintenance",
-    avatar: "/placeholder.svg?height=100&width=100",
-    currentActivity: {
-      id: "act3",
-      timestamp: new Date().toISOString(),
-      type: "maintain",
-      description: "Performing quantum circuit maintenance",
-      descriptionJp: "量子回路のメンテナンスを実行中",
-      location: "Quantum Maintenance Bay",
-      locationJp: "量子メンテナンスベイ",
-      metrics: {
-        cpuLoad: 45,
-        memoryUsage: 62,
-        networkLatency: 12,
-      },
-      logs: [],
-    },
-  },
-];
-
-const getActivityIcon = (type: AgentActivity["type"]) => {
-  switch (type) {
-    case "process":
-      return Cpu;
-    case "analyze":
-      return Brain;
-    case "maintain":
-      return Activity;
-    case "optimize":
-      return Workflow;
-    case "communicate":
-      return Network;
-    default:
-      return Brain;
-  }
-};
-
-const getStatusColor = (status: AIAgent["status"]) => {
-  switch (status) {
-    case "active":
-      return "border-green-400/30 bg-green-500/10 text-green-300";
-    case "idle":
-      return "border-yellow-400/30 bg-yellow-500/10 text-yellow-300";
-    case "maintenance":
-      return "border-purple-400/30 bg-purple-500/10 text-purple-300";
-    default:
-      return "border-purple-400/30 bg-purple-500/10 text-purple-300";
-  }
-};
-
 const getLogTypeColor = (type: LogEntry["type"]) => {
   switch (type) {
     case "info":
@@ -245,69 +175,147 @@ const getLogTypeColor = (type: LogEntry["type"]) => {
 };
 
 export function AgentCCTV() {
-  const [selectedAgent, setSelectedAgent] = useState<AIAgent>(agents[0]);
+  const [agents, setAgents] = useState<AIAgent[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   const [isConnected, setIsConnected] = useState(true);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [observation, setObservation] = useState<CCTVObservation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Generate a new log entry
-  const generateLog = (agent: AIAgent) => {
-    const activities = [
-      ...generateProcessingActivities(agent.name, agent.nameJp),
-      ...generateMaintenanceActivities(agent.name, agent.nameJp),
-      ...generateCommunicationActivities(agent.name, agent.nameJp),
-    ];
+  // Function to check if we need to fetch new observation
+  const shouldFetchNewObservation = (agentId: string) => {
+    const cached = localStorage.getItem(`observation_${agentId}`);
+    if (!cached) return true;
 
-    const activity = activities[Math.floor(Math.random() * activities.length)];
-    const types: LogEntry["type"][] = ["info", "warning", "success"];
-    const type = types[Math.floor(Math.random() * types.length)];
-
-    return {
-      id: `log-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
-      message: activity.message,
-      messageJp: activity.messageJp,
-      type,
-    };
+    const { timestamp } = JSON.parse(cached);
+    const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
+    return timestamp < thirtyMinutesAgo;
   };
 
-  // Update metrics periodically
+  // Fetch agents data
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newLog = generateLog(selectedAgent);
-      setLogs((prev) => [newLog, ...prev].slice(0, 50)); // Keep last 50 logs
+    const fetchAgents = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("http://localhost:3001/api/agents");
+        const data: AgentsResponse = await response.json();
 
-      // Update agent metrics
-      const variation = Math.random() * 10 - 5; // -5 to +5
-      selectedAgent.currentActivity.metrics.cpuLoad = Math.min(
-        100,
-        Math.max(0, selectedAgent.currentActivity.metrics.cpuLoad + variation)
+        // Combine all agents and remove duplicates
+        const allAgents = [
+          ...data.custom,
+          ...data.city,
+          ...data.management,
+          ...data.resident,
+        ].filter(
+          (agent, index, self) =>
+            index === self.findIndex((a) => a.id === agent.id)
+        ) as AIAgent[];
+
+        setAgents(allAgents);
+        if (allAgents.length > 0 && !selectedAgent) {
+          setSelectedAgent(allAgents[0]);
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching agents:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchAgents();
+  }, []);
+
+  // Fetch CCTV observation data
+  const fetchObservation = async (agentId: string) => {
+    try {
+      // Check cache first
+      const cached = localStorage.getItem(`observation_${agentId}`);
+      if (cached) {
+        const cachedData = JSON.parse(cached);
+        if (!shouldFetchNewObservation(agentId)) {
+          setObservation(cachedData);
+          const newLog: LogEntry = {
+            id: `log-${cachedData.timestamp}`,
+            timestamp: new Date(cachedData.timestamp),
+            message: cachedData.narrative,
+            messageJp: `エリア: ${cachedData.area} - 場所: ${
+              cachedData.location || "不明"
+            }`,
+            type: "info",
+          };
+          setLogs((prev) => [newLog, ...prev].slice(0, 50));
+          return;
+        }
+      }
+
+      // Fetch new observation if needed
+      const response = await fetch(
+        `http://localhost:3001/api/cctv/observe/${agentId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
-      selectedAgent.currentActivity.metrics.memoryUsage = Math.min(
-        100,
-        Math.max(
-          0,
-          selectedAgent.currentActivity.metrics.memoryUsage + variation
-        )
-      );
-      selectedAgent.currentActivity.metrics.networkLatency = Math.min(
-        100,
-        Math.max(
-          1,
-          selectedAgent.currentActivity.metrics.networkLatency + variation / 2
-        )
-      );
-    }, 3000);
+      const data: ApiResponse<CCTVObservation> = await response.json();
+
+      if (data.success) {
+        // Store in localStorage with timestamp
+        localStorage.setItem(
+          `observation_${agentId}`,
+          JSON.stringify({
+            ...data.data,
+            timestamp: Date.now(),
+          })
+        );
+
+        setObservation(data.data);
+        const newLog: LogEntry = {
+          id: `log-${data.data.timestamp}`,
+          timestamp: new Date(data.data.timestamp),
+          message: data.data.narrative,
+          messageJp: `エリア: ${data.data.area} - 場所: ${
+            data.data.location || "不明"
+          }`,
+          type: "info",
+        };
+        setLogs((prev) => [newLog, ...prev].slice(0, 50));
+      }
+    } catch (error) {
+      console.error("Error fetching CCTV observation:", error);
+      setIsConnected(false);
+    }
+  };
+
+  // Initial fetch and periodic check
+  useEffect(() => {
+    if (selectedAgent) {
+      fetchObservation(selectedAgent.id);
+    }
+  }, [selectedAgent]);
+
+  // Check connection status every 5 seconds
+  useEffect(() => {
+    if (!selectedAgent) return;
+
+    const interval = setInterval(() => {
+      const cached = localStorage.getItem(`observation_${selectedAgent.id}`);
+      if (cached) {
+        setIsConnected(true);
+      } else {
+        fetch(`http://localhost:3001/api/cctv/observe/${selectedAgent.id}`)
+          .then(() => setIsConnected(true))
+          .catch(() => setIsConnected(false));
+      }
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [selectedAgent]);
 
-  // Simulate connection status changes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsConnected((prev) => !prev);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <MainLayout>
@@ -336,7 +344,7 @@ export function AgentCCTV() {
         </CardHeader>
         <CardContent className="space-y-6">
           <Select
-            value={selectedAgent.id}
+            value={selectedAgent?.id || ""}
             onValueChange={(value) => {
               const agent = agents.find((a) => a.id === value);
               if (agent) {
@@ -359,9 +367,12 @@ export function AgentCCTV() {
                     {agent.name}
                     <Badge
                       variant="outline"
-                      className={cn("ml-2", getStatusColor(agent.status))}
+                      className={cn(
+                        "ml-2",
+                        "border-purple-400/30 bg-purple-500/10 text-purple-300"
+                      )}
                     >
-                      {agent.status}
+                      {agent.role}
                     </Badge>
                   </span>
                 </SelectItem>
@@ -369,131 +380,150 @@ export function AgentCCTV() {
             </SelectContent>
           </Select>
 
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-            <div className="relative aspect-video overflow-hidden rounded-lg border border-purple-500/10 bg-black/40">
-              {/* Scanline effect */}
-              <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan" />
-              </div>
-
-              {/* CCTV content */}
-              <div className="relative h-full p-6">
-                <div className="absolute top-4 left-4 flex items-center gap-2">
-                  <Signal className="h-4 w-4 text-purple-400 animate-pulse" />
-                  <span className="text-sm text-purple-300/70">LIVE FEED</span>
+          {selectedAgent && (
+            <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+              <div className="relative aspect-video overflow-hidden rounded-lg border border-purple-500/10 bg-black/40">
+                {/* Scanline effect */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/5 to-transparent animate-scan" />
                 </div>
 
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="space-y-4 rounded-lg border border-purple-500/10 bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-medium text-purple-300">
-                          {selectedAgent.name}
-                        </h3>
-                        <p className="text-sm text-purple-300/70">
-                          {selectedAgent.nameJp}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={getStatusColor(selectedAgent.status)}
-                      >
-                        {selectedAgent.status}
-                      </Badge>
-                    </div>
+                {/* CCTV content */}
+                <div className="relative h-full p-6">
+                  <div className="absolute top-4 left-4 flex items-center gap-2">
+                    <Signal className="h-4 w-4 text-purple-400 animate-pulse" />
+                    <span className="text-sm text-purple-300/70">
+                      LIVE FEED
+                    </span>
+                  </div>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        {/* @ts-ignore */}
-                        {React.createElement(
-                          getActivityIcon(selectedAgent.currentActivity.type),
-                          {
-                            className: "h-4 w-4 text-purple-400",
-                          }
-                        )}
-                        <span className="text-sm text-purple-300">
-                          {selectedAgent.currentActivity.description}
-                        </span>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="space-y-4 rounded-lg border border-purple-500/10 bg-black/60 p-4 backdrop-blur-sm">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-medium text-purple-300">
+                            {selectedAgent.name}
+                          </h3>
+                          <p className="text-sm text-purple-300/70">
+                            {selectedAgent.role}
+                          </p>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                        >
+                          {selectedAgent.personality}
+                        </Badge>
                       </div>
-                      <p className="text-sm text-purple-300/70">
-                        {selectedAgent.currentActivity.descriptionJp}
-                      </p>
-                    </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <p className="text-xs text-purple-300/50">CPU Load</p>
-                        <div className="flex items-center gap-2">
-                          <Cpu className="h-4 w-4 text-purple-400" />
-                          <span className="text-sm font-medium text-purple-300">
-                            {Math.round(
-                              selectedAgent.currentActivity.metrics.cpuLoad
-                            )}
-                            %
-                          </span>
+                      {observation && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-purple-400" />
+                            <span className="text-sm text-purple-300">
+                              {observation.narrative.slice(0, 600) +
+                                (observation.narrative.length > 600
+                                  ? "..."
+                                  : "")}
+                            </span>
+                          </div>
+                          <p className="text-sm text-purple-300/70">
+                            Area: {observation.area} - Location:{" "}
+                            {observation.location || "Unknown"}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-purple-300/50">
+                            Analytical Thinking
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-purple-400" />
+                            <span className="text-sm font-medium text-purple-300">
+                              {(
+                                selectedAgent.traits.analyticalThinking * 100
+                              ).toFixed(0)}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-purple-300/50">Empathy</p>
+                          <div className="flex items-center gap-2">
+                            <Activity className="h-4 w-4 text-purple-400" />
+                            <span className="text-sm font-medium text-purple-300">
+                              {(selectedAgent.traits.empathy * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-purple-300/50">
+                            Creativity
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <Workflow className="h-4 w-4 text-purple-400" />
+                            <span className="text-sm font-medium text-purple-300">
+                              {(selectedAgent.traits.creativity * 100).toFixed(
+                                0
+                              )}
+                              %
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-purple-300/50">Memory</p>
-                        <div className="flex items-center gap-2">
-                          <Brain className="h-4 w-4 text-purple-400" />
-                          <span className="text-sm font-medium text-purple-300">
-                            {Math.round(
-                              selectedAgent.currentActivity.metrics.memoryUsage
-                            )}
-                            %
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-purple-300/50">Latency</p>
-                        <div className="flex items-center gap-2">
-                          <Activity className="h-4 w-4 text-purple-400" />
-                          <span className="text-sm font-medium text-purple-300">
-                            {Math.round(
-                              selectedAgent.currentActivity.metrics
-                                .networkLatency
-                            )}
-                            ms
-                          </span>
+
+                      <div className="space-y-2">
+                        <p className="text-xs text-purple-300/50">Interests</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedAgent.interests.map((interest, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                            >
+                              {interest}
+                            </Badge>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="rounded-lg border border-purple-500/10 bg-black/40 p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Terminal className="h-4 w-4 text-purple-400" />
-                <h3 className="font-medium text-purple-300">Activity Log</h3>
-              </div>
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-3">
-                  {logs.map((log) => (
-                    <div key={log.id} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-purple-300/50">
-                          {log.timestamp.toLocaleTimeString()}
-                        </span>
-                        <Badge
-                          variant="outline"
-                          className={cn("text-xs", getLogTypeColor(log.type))}
-                        >
-                          {log.type}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-purple-300">{log.message}</p>
-                      <p className="text-xs text-purple-300/70">
-                        {log.messageJp}
-                      </p>
-                    </div>
-                  ))}
+              <div className="rounded-lg border border-purple-500/10 bg-black/40 p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Terminal className="h-4 w-4 text-purple-400" />
+                  <h3 className="font-medium text-purple-300">Activity Log</h3>
                 </div>
-              </ScrollArea>
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-3">
+                    {logs.map((log) => (
+                      <div key={log.id} className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-purple-300/50">
+                            {log.timestamp.toLocaleTimeString()}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={cn("text-xs", getLogTypeColor(log.type))}
+                          >
+                            {log.type}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-purple-300">{log.message}</p>
+                        <p className="text-xs text-purple-300/70">
+                          {log.messageJp}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </MainLayout>

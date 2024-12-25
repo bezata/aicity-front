@@ -29,6 +29,7 @@ import { useState, useEffect } from "react";
 import { NeuralBrainAnimation } from "./neural-brain-animation";
 import { CityVitals } from "./city-vitals";
 import { MetricsDashboard } from "./metrics-dashboard";
+import { LoadingScreen } from "./loading-screen";
 
 interface District {
   id: string;
@@ -105,12 +106,14 @@ export function MainDashboard() {
     serviceAvailability: 0,
   });
   const [districts, setDistricts] = useState<District[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch all data every 10 minutes
   useEffect(() => {
     const districtId = "a42ed892-3878-45a5-9a1a-4ceaf9524f1c";
 
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         // Fetch districts
         const districtsResponse = await fetch("/api/districts");
@@ -178,6 +181,7 @@ export function MainDashboard() {
       } catch (error) {
         console.error("Error fetching data:", error);
       }
+      setIsLoading(false);
     };
 
     // Initial fetch
@@ -193,6 +197,10 @@ export function MainDashboard() {
   useEffect(() => {
     console.log("Current districts:", districts);
   }, [districts]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">

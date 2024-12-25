@@ -1,24 +1,35 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Brain, MessageCircle, Send, Users } from 'lucide-react'
-import type { Message, Participant, Session } from "@/types"
+import * as React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Message } from "@/types/conversation.types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Brain, MessageCircle, Send, Users } from "lucide-react";
+import { Session } from "@/lib/data";
+import { Participant } from "@/types/conversation.types";
 
 interface SessionViewerProps {
   session: Session & {
-    participantsDetails: Participant[]
-  }
-  open: boolean
-  onOpenChange: (open: boolean) => void
+    participantsDetails: Participant[];
+  };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function SessionViewer({ session, open, onOpenChange }: SessionViewerProps) {
+export function SessionViewer({
+  session,
+  open,
+  onOpenChange,
+}: SessionViewerProps) {
   const [messages, setMessages] = React.useState<Message[]>([
     {
       id: "1",
@@ -27,9 +38,9 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
         id: "agent1",
         name: "Quantum Mind Alpha",
         avatar: "/placeholder.svg?height=40&width=40",
-        isAgent: true
+        isAgent: true,
       },
-      timestamp: "2 minutes ago"
+      timestamp: "2 minutes ago",
     },
     {
       id: "2",
@@ -38,20 +49,20 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
         id: "agent2",
         name: "Neural Entity Beta",
         avatar: "/placeholder.svg?height=40&width=40",
-        isAgent: true
+        isAgent: true,
       },
-      timestamp: "1 minute ago"
-    }
-  ])
-  const [newMessage, setNewMessage] = React.useState("")
-  const scrollRef = React.useRef<HTMLDivElement>(null)
+      timestamp: "1 minute ago",
+    },
+  ]);
+  const [newMessage, setNewMessage] = React.useState("");
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   // Auto scroll to bottom when new messages arrive
   React.useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages])
+  }, [messages]);
 
   // Simulate incoming messages for live sessions
   React.useEffect(() => {
@@ -62,32 +73,36 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
           "Quantum state coherence maintained at optimal levels",
           "Initiating deep learning sequence in neural cluster 5",
           "Synaptic connections showing 95% efficiency",
-          "Processing quantum entanglement data streams"
-        ]
-        
-        const randomAgent = session.participantsDetails.find(p => p.isAgent)
-        if (randomAgent) {
-          setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            content: agentMessages[Math.floor(Math.random() * agentMessages.length)],
-            sender: {
-              id: randomAgent.id,
-              name: randomAgent.name,
-              avatar: randomAgent.avatar,
-              isAgent: true
-            },
-            timestamp: "Just now"
-          }])
-        }
-      }, 5000)
+          "Processing quantum entanglement data streams",
+        ];
 
-      return () => clearInterval(interval)
+        const randomAgent = session.participantsDetails.find((p) => p.isAgent);
+        if (randomAgent) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              content:
+                agentMessages[Math.floor(Math.random() * agentMessages.length)],
+              sender: {
+                id: randomAgent.id,
+                name: randomAgent.name,
+                avatar: randomAgent.avatar,
+                isAgent: true,
+              },
+              timestamp: "Just now",
+            },
+          ]);
+        }
+      }, 5000);
+
+      return () => clearInterval(interval);
     }
-  }, [session])
+  }, [session]);
 
   const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newMessage.trim()) return
+    e.preventDefault();
+    if (!newMessage.trim()) return;
 
     const message: Message = {
       id: Date.now().toString(),
@@ -95,27 +110,27 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
       sender: {
         id: "user",
         name: "Observer",
-        avatar: "/placeholder.svg?height=40&width=40"
+        avatar: "/placeholder.svg?height=40&width=40",
       },
-      timestamp: "Just now"
-    }
+      timestamp: "Just now",
+    };
 
-    setMessages(prev => [...prev, message])
-    setNewMessage("")
-  }
+    setMessages((prev) => [...prev, message]);
+    setNewMessage("");
+  };
 
   const getStatusColor = (status: Session["status"]) => {
     switch (status) {
       case "live":
-        return "border-green-400/30 bg-green-500/10 text-green-300"
+        return "border-green-400/30 bg-green-500/10 text-green-300";
       case "scheduled":
-        return "border-blue-400/30 bg-blue-500/10 text-blue-300"
+        return "border-blue-400/30 bg-blue-500/10 text-blue-300";
       case "completed":
-        return "border-purple-400/30 bg-purple-500/10 text-purple-300"
+        return "border-purple-400/30 bg-purple-500/10 text-purple-300";
       default:
-        return "border-purple-400/30 bg-purple-500/10 text-purple-300"
+        return "border-purple-400/30 bg-purple-500/10 text-purple-300";
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,14 +141,9 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
               <DialogTitle className="font-light tracking-wider">
                 {session.title}
               </DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                {session.titleJp}
-              </p>
+              <p className="text-sm text-muted-foreground">{session.titleJp}</p>
             </div>
-            <Badge
-              variant="outline"
-              className={getStatusColor(session.status)}
-            >
+            <Badge variant="outline" className={getStatusColor(session.status)}>
               {session.status}
             </Badge>
           </div>
@@ -141,7 +151,7 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
 
         <div className="grid grid-cols-[1fr_200px] gap-4">
           <div className="space-y-4">
-            <ScrollArea 
+            <ScrollArea
               ref={scrollRef}
               className="h-[400px] rounded-md border border-purple-500/10 bg-black/20 p-4"
             >
@@ -150,7 +160,7 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
                   <div
                     key={message.id}
                     className={`flex items-start gap-3 ${
-                      message.sender.isAgent ? '' : 'flex-row-reverse'
+                      message.sender.isAgent ? "" : "flex-row-reverse"
                     }`}
                   >
                     <Avatar className="border-2 border-black/30">
@@ -159,9 +169,11 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
                         {message.sender.name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <div className={`space-y-1 ${
-                      message.sender.isAgent ? '' : 'text-right'
-                    }`}>
+                    <div
+                      className={`space-y-1 ${
+                        message.sender.isAgent ? "" : "text-right"
+                      }`}
+                    >
                       <p className="text-sm font-medium text-purple-300">
                         {message.sender.name}
                         <span className="ml-2 text-xs text-purple-300/50">
@@ -171,8 +183,8 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
                       <div
                         className={`rounded-lg px-3 py-2 text-sm ${
                           message.sender.isAgent
-                            ? 'bg-purple-500/10 text-purple-300'
-                            : 'bg-blue-500/10 text-blue-300'
+                            ? "bg-purple-500/10 text-purple-300"
+                            : "bg-blue-500/10 text-blue-300"
                         }`}
                       >
                         {message.content}
@@ -253,7 +265,8 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-green-300/70">
-                  This session is currently active. You can participate in real-time discussions.
+                  This session is currently active. You can participate in
+                  real-time discussions.
                 </p>
               </div>
             )}
@@ -261,6 +274,5 @@ export function SessionViewer({ session, open, onOpenChange }: SessionViewerProp
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-

@@ -1,17 +1,19 @@
 export interface Message {
   id: string;
-  agentId: string;
   content: string;
-  timestamp: number;
-  role: "user" | "assistant";
-  context?: string;
-  style?: string;
-  topics?: string[];
-  sentiment?: number;
+  sender: {
+    id: string;
+    name: string;
+    avatar: string;
+    isAgent?: boolean;
+  };
+  timestamp: string;
 }
 
-export interface ConversationState {
-  momentum: number;
-  timeOfDay: string;
-  currentStyle: string;
+export interface Participant {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  isAgent?: boolean;
 }
