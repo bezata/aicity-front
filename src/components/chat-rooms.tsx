@@ -225,7 +225,7 @@ export function ChatRooms() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-[calc(100vh-2rem)] flex-col ">
       <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
         <div className="container mx-auto flex items-center justify-between p-4">
           <div className="space-y-1">
@@ -260,9 +260,9 @@ export function ChatRooms() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_350px]">
+      <div className="flex-1 container mx-auto grid gap-4 p-3 lg:grid-cols-[1fr_350px]">
         <div className="flex flex-col space-y-4">
-          <ScrollArea className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
+          <ScrollArea className="h-[calc(100vh-12rem)] rounded-lg border border-purple-500/10 bg-black/20 p-4">
             <div className="space-y-6">
               {messages.map((message) => (
                 <div
@@ -366,7 +366,7 @@ export function ChatRooms() {
           </div>
         </div>
 
-        <ScrollArea className="rounded-lg border border-purple-500/10 bg-black/20 p-4">
+        <ScrollArea className="h-[calc(100vh-12rem)] rounded-lg border border-purple-500/10 bg-black/20 p-4">
           <div className="space-y-6">
             <div>
               <h3 className="mb-3 text-sm font-medium text-purple-300">
