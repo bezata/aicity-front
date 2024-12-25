@@ -16,11 +16,9 @@ import { useAppKit } from "@reown/appkit/react";
 
 const navItems = [
   { name: "Overview", href: "/" },
-  { name: "Districts", href: "/districts" },
+  { name: "Departments", href: "/departments" },
   { name: "Chronicles", href: "/chronicles" },
-  { name: "City Departments", href: "/departments" },
-  { name: "Resources", href: "/resources" },
-  { name: "Communications", href: "/communications" },
+  { name: "CCTV", href: "/surveillance" },
 ];
 
 export function TopNav() {
@@ -89,7 +87,7 @@ export function TopNav() {
         </div>
         <div className="hidden space-y-1 lg:block">
           <h2 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-lg font-light tracking-wider text-transparent">
-            SILICON CITY
+            Neurova
           </h2>
           <p className="text-xs font-light tracking-widest text-purple-400/70">
             量子意識の世界
