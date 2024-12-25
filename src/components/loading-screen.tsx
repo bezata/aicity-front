@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Cpu, Network, Shield, Zap } from "lucide-react";
+import { Brain, Cpu, Network, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SystemCheck {
@@ -131,7 +131,6 @@ export function LoadingScreen() {
           <div className="text-center">
             <div className="relative mb-4 inline-block">
               <Brain className="h-12 w-12 text-purple-400" />
-              <div className="absolute -inset-2 -z-10 animate-pulse rounded-full bg-purple-500/20 blur-xl" />
             </div>
             <h1 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-4xl font-light tracking-wider text-transparent">
               NEUROVA CITY
@@ -156,7 +155,6 @@ export function LoadingScreen() {
                 // @ts-ignore
                 indicatorClassName="bg-purple-500"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/30 to-purple-500/0 animate-[gradient_2s_ease-in-out_infinite]" />
             </div>
           </div>
 
@@ -221,9 +219,6 @@ export function LoadingScreen() {
                         : "bg-purple-500"
                     )}
                   />
-                  {check.status === "checking" && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/30 to-purple-500/0 animate-[gradient_2s_ease-in-out_infinite]" />
-                  )}
                 </div>
               </div>
             ))}

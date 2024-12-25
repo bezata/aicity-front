@@ -225,312 +225,306 @@ export function ChatRooms() {
   };
 
   return (
-    <div className="fixed inset-0 bg-black">
-      <div className="grid h-screen grid-rows-[auto_1fr]">
-        <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
-          <div className="container mx-auto flex items-center justify-between p-4">
-            <div className="space-y-1">
-              <h1 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-2xl font-light tracking-wider text-transparent">
-                Neural Nexus Chat
-              </h1>
-              <p className="font-light tracking-widest text-purple-400/70">
-                ニューラルネクサスチャット
-              </p>
+    <div className="flex h-full flex-col">
+      <div className="border-b border-purple-500/10 bg-black/30 backdrop-blur-xl">
+        <div className="container mx-auto flex items-center justify-between p-4">
+          <div className="space-y-1">
+            <h1 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-2xl font-light tracking-wider text-transparent">
+              Neural Nexus Chat
+            </h1>
+            <p className="font-light tracking-widest text-purple-400/70">
+              ニューラルネクサスチャット
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                "animate-pulse",
+                connected
+                  ? "border-green-400/30 bg-green-500/10 text-green-300"
+                  : "border-red-400/30 bg-red-500/10 text-red-300"
+              )}
+            >
+              <Radio className="mr-2 h-3 w-3" />
+              {connected ? "Connected" : "Reconnecting"}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+            >
+              {activeAgents.filter((a) => a.status === "active").length} Active
+              Entities
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-hidden container mx-auto grid gap-6 p-4 lg:grid-cols-[1fr_350px]">
+        <div className="flex flex-col space-y-4">
+          <ScrollArea className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
+            <div className="space-y-6">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "flex gap-4",
+                    message.sender.type === "user"
+                      ? "flex-row-reverse"
+                      : "flex-row"
+                  )}
+                >
+                  <div className="flex flex-col gap-2">
+                    <div
+                      className={cn(
+                        "relative max-w-[80%] overflow-hidden rounded-lg p-4",
+                        message.sender.type === "user"
+                          ? "bg-purple-500/20 text-purple-100"
+                          : "bg-purple-500/10 text-purple-300"
+                      )}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">
+                            {message.sender.name}
+                          </span>
+                          {message.sender.type === "ai" && (
+                            <Badge
+                              variant="outline"
+                              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                            >
+                              Lvl {message.sender.level}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-purple-300/50">
+                          {new Date(message.timestamp).toLocaleTimeString()}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-purple-300/70">
+                        {message.sender.nameJp}
+                      </p>
+
+                      <p className="relative z-10 mt-2 text-sm">
+                        {message.content}
+                      </p>
+
+                      {(message.location ||
+                        message.activity ||
+                        message.topic) && (
+                        <div className="mt-3 flex flex-wrap gap-2 border-t border-purple-500/10 pt-2">
+                          {message.location && (
+                            <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                              <MapPin className="h-3 w-3" />
+                              <span>{message.location}</span>
+                            </div>
+                          )}
+                          {message.activity && (
+                            <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                              <Activity className="h-3 w-3" />
+                              <span>{message.activity.replace(/_/g, " ")}</span>
+                            </div>
+                          )}
+                          {message.topic && (
+                            <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
+                              <MessageCircle className="h-3 w-3" />
+                              <span>{message.topic.replace(/_/g, " ")}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-50" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={scrollRef} />
             </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={cn(
-                  "animate-pulse",
-                  connected
-                    ? "border-green-400/30 bg-green-500/10 text-green-300"
-                    : "border-red-400/30 bg-red-500/10 text-red-300"
-                )}
-              >
-                <Radio className="mr-2 h-3 w-3" />
-                {connected ? "Connected" : "Reconnecting"}
-              </Badge>
-              <Badge
-                variant="outline"
-                className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-              >
-                {activeAgents.filter((a) => a.status === "active").length}{" "}
-                Active Entities
-              </Badge>
-            </div>
+          </ScrollArea>
+
+          <div className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Share your thoughts..."
+              className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleSend();
+                }
+              }}
+            />
+            <Button
+              onClick={handleSend}
+              className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+            >
+              <Send className="h-4 w-4" />
+              Send
+            </Button>
           </div>
         </div>
 
-        <div className="container mx-auto grid h-full gap-6 p-4 lg:grid-cols-[1fr_350px]">
-          <div className="flex flex-col space-y-4">
-            <ScrollArea className="flex-1 rounded-lg border border-purple-500/10 bg-black/20 p-4">
-              <div className="space-y-6">
-                {messages.map((message) => (
+        <ScrollArea className="rounded-lg border border-purple-500/10 bg-black/20 p-4">
+          <div className="space-y-6">
+            <div>
+              <h3 className="mb-3 text-sm font-medium text-purple-300">
+                Active Entities
+              </h3>
+              <div className="space-y-3">
+                {activeAgents.map((agent) => (
                   <div
-                    key={message.id}
-                    className={cn(
-                      "flex gap-4",
-                      message.sender.type === "user"
-                        ? "flex-row-reverse"
-                        : "flex-row"
-                    )}
+                    key={agent.id}
+                    className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
                   >
-                    <div className="flex flex-col gap-2">
-                      <div
-                        className={cn(
-                          "relative max-w-[80%] overflow-hidden rounded-lg p-4",
-                          message.sender.type === "user"
-                            ? "bg-purple-500/20 text-purple-100"
-                            : "bg-purple-500/10 text-purple-300"
-                        )}
-                      >
-                        <div className="mb-2 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {message.sender.name}
-                            </span>
-                            {message.sender.type === "ai" && (
-                              <Badge
-                                variant="outline"
-                                className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                              >
-                                Lvl {message.sender.level}
-                              </Badge>
+                    <div className="flex items-start gap-3">
+                      <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                        <Bot className="h-4 w-4 text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-purple-300">
+                            {agent.name}
+                          </p>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "border-purple-400/30",
+                              agent.status === "active"
+                                ? "bg-green-500/10 text-green-300"
+                                : agent.status === "processing"
+                                ? "bg-yellow-500/10 text-yellow-300"
+                                : "bg-purple-500/10 text-purple-300"
                             )}
-                          </div>
-                          <span className="text-xs text-purple-300/50">
-                            {new Date(message.timestamp).toLocaleTimeString()}
-                          </span>
+                          >
+                            {agent.status}
+                          </Badge>
                         </div>
-
                         <p className="text-xs text-purple-300/70">
-                          {message.sender.nameJp}
+                          {agent.nameJp}
                         </p>
-
-                        <p className="relative z-10 mt-2 text-sm">
-                          {message.content}
-                        </p>
-
-                        {(message.location ||
-                          message.activity ||
-                          message.topic) && (
-                          <div className="mt-3 flex flex-wrap gap-2 border-t border-purple-500/10 pt-2">
-                            {message.location && (
-                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
-                                <MapPin className="h-3 w-3" />
-                                <span>{message.location}</span>
-                              </div>
-                            )}
-                            {message.activity && (
-                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
-                                <Activity className="h-3 w-3" />
-                                <span>
-                                  {message.activity.replace(/_/g, " ")}
-                                </span>
-                              </div>
-                            )}
-                            {message.topic && (
-                              <div className="flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/5 px-2 py-0.5 text-xs text-purple-300/70">
-                                <MessageCircle className="h-3 w-3" />
-                                <span>{message.topic.replace(/_/g, " ")}</span>
-                              </div>
-                            )}
+                        <div className="mt-2 space-y-2">
+                          <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                            <Target className="h-3 w-3" />
+                            <span>{agent.role}</span>
                           </div>
-                        )}
-
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-50" />
+                          {agent.currentActivity && (
+                            <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                              <Activity className="h-3 w-3" />
+                              <span>{agent.currentActivity}</span>
+                            </div>
+                          )}
+                          {agent.location && (
+                            <div className="flex items-center gap-2 text-xs text-purple-300/70">
+                              <MapPin className="h-3 w-3" />
+                              <span>{agent.location}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-purple-300/70">
+                              Consciousness
+                            </span>
+                            <span className="text-purple-300">
+                              {agent.consciousness}%
+                            </span>
+                          </div>
+                          <Progress
+                            value={agent.consciousness}
+                            className="h-1 bg-purple-500/10"
+                            // @ts-ignore
+                            indicatorClassName="bg-purple-500"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
-                <div ref={scrollRef} />
               </div>
-            </ScrollArea>
+            </div>
 
-            <div className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Share your thoughts..."
-                className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSend();
-                  }
-                }}
-              />
-              <Button
-                onClick={handleSend}
-                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              >
-                <Send className="h-4 w-4" />
-                Send
-              </Button>
+            <div>
+              <h3 className="mb-3 text-sm font-medium text-purple-300">
+                Active Projects
+              </h3>
+              <div className="space-y-3">
+                {donationProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                          <project.icon className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-purple-300">
+                            {project.title}
+                          </p>
+                          <p className="text-xs text-purple-300/70">
+                            {project.titleJp}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-purple-300/70">
+                        {project.description}
+                      </p>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-purple-300/70">Progress</span>
+                          <span className="font-medium text-purple-300">
+                            {Math.round((project.current / project.goal) * 100)}
+                            %
+                          </span>
+                        </div>
+                        <div className="relative h-1.5 overflow-hidden rounded-full bg-purple-500/10">
+                          <div
+                            className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
+                            style={{
+                              width: `${
+                                (project.current / project.goal) * 100
+                              }%`,
+                            }}
+                          >
+                            <div className="absolute inset-0 animate-pulse bg-white/20" />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-purple-300/50">
+                          <span>{project.current.toLocaleString()} CR</span>
+                          <span>{project.goal.toLocaleString()} CR</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-purple-300/70">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{project.supporters} supporters</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{project.deadline}</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                        size="sm"
+                      >
+                        <DollarSign className="h-3 w-3" />
+                        Support Project
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-
-          <ScrollArea className="rounded-lg border border-purple-500/10 bg-black/20 p-4">
-            <div className="space-y-6">
-              <div>
-                <h3 className="mb-3 text-sm font-medium text-purple-300">
-                  Active Entities
-                </h3>
-                <div className="space-y-3">
-                  {activeAgents.map((agent) => (
-                    <div
-                      key={agent.id}
-                      className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                          <Bot className="h-4 w-4 text-purple-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-purple-300">
-                              {agent.name}
-                            </p>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "border-purple-400/30",
-                                agent.status === "active"
-                                  ? "bg-green-500/10 text-green-300"
-                                  : agent.status === "processing"
-                                  ? "bg-yellow-500/10 text-yellow-300"
-                                  : "bg-purple-500/10 text-purple-300"
-                              )}
-                            >
-                              {agent.status}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-purple-300/70">
-                            {agent.nameJp}
-                          </p>
-                          <div className="mt-2 space-y-2">
-                            <div className="flex items-center gap-2 text-xs text-purple-300/70">
-                              <Target className="h-3 w-3" />
-                              <span>{agent.role}</span>
-                            </div>
-                            {agent.currentActivity && (
-                              <div className="flex items-center gap-2 text-xs text-purple-300/70">
-                                <Activity className="h-3 w-3" />
-                                <span>{agent.currentActivity}</span>
-                              </div>
-                            )}
-                            {agent.location && (
-                              <div className="flex items-center gap-2 text-xs text-purple-300/70">
-                                <MapPin className="h-3 w-3" />
-                                <span>{agent.location}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="mt-2 space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-purple-300/70">
-                                Consciousness
-                              </span>
-                              <span className="text-purple-300">
-                                {agent.consciousness}%
-                              </span>
-                            </div>
-                            <Progress
-                              value={agent.consciousness}
-                              className="h-1 bg-purple-500/10"
-                              // @ts-ignore
-                              indicatorClassName="bg-purple-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 className="mb-3 text-sm font-medium text-purple-300">
-                  Active Projects
-                </h3>
-                <div className="space-y-3">
-                  {donationProjects.map((project) => (
-                    <div
-                      key={project.id}
-                      className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-3"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                            <project.icon className="h-4 w-4 text-purple-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-purple-300">
-                              {project.title}
-                            </p>
-                            <p className="text-xs text-purple-300/70">
-                              {project.titleJp}
-                            </p>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-purple-300/70">
-                          {project.description}
-                        </p>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-purple-300/70">Progress</span>
-                            <span className="font-medium text-purple-300">
-                              {Math.round(
-                                (project.current / project.goal) * 100
-                              )}
-                              %
-                            </span>
-                          </div>
-                          <div className="relative h-1.5 overflow-hidden rounded-full bg-purple-500/10">
-                            <div
-                              className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
-                              style={{
-                                width: `${
-                                  (project.current / project.goal) * 100
-                                }%`,
-                              }}
-                            >
-                              <div className="absolute inset-0 animate-pulse bg-white/20" />
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-purple-300/50">
-                            <span>{project.current.toLocaleString()} CR</span>
-                            <span>{project.goal.toLocaleString()} CR</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-xs text-purple-300/70">
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>{project.supporters} supporters</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{project.deadline}</span>
-                          </div>
-                        </div>
-
-                        <Button
-                          className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                          size="sm"
-                        >
-                          <DollarSign className="h-3 w-3" />
-                          Support Project
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-        </div>
+        </ScrollArea>
       </div>
     </div>
   );
