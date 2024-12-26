@@ -324,35 +324,37 @@ export function ChatRooms() {
   const handleSend = useCallback(() => {
     if (!input.trim() || !connected) return;
 
-    const timestamp = new Date().toISOString();
-    const messageId = Date.now().toString();
+    // Find the latest message to get current conversation context
+    const latestMessage = messages[messages.length - 1];
 
     const newMessage: Message = {
-      id: messageId,
+      id: Date.now().toString(),
       sender: {
         name: "Observer",
         nameJp: "オブザーバー",
         type: "user",
       },
       content: input.trim(),
-      timestamp: timestamp,
+      timestamp: new Date().toISOString(),
+      // Use the latest conversation context for user messages
+      location: latestMessage?.location,
+      activity: latestMessage?.activity,
+      topic: latestMessage?.topic,
     };
 
     // Update UI first
     setMessages((prev) => [...prev, newMessage]);
 
-    // Use sendMessage from hook instead of direct WebSocket
+    // Send the correctly formatted message
     sendMessage({
       type: "user_message",
       conversationId: currentConversation,
-      messageId: messageId,
-      content: newMessage.content,
-      timestamp: timestamp,
+      content: input.trim(),
     });
 
     setInput("");
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [input, currentConversation, connected, sendMessage]);
+  }, [input, currentConversation, connected, sendMessage, messages]);
 
   const getEventTypeIcon = (departmentId: string) => {
     switch (departmentId) {
@@ -458,10 +460,8 @@ export function ChatRooms() {
                   <div className="flex flex-col gap-2">
                     <div
                       className={cn(
-                        "relative max-w-[80%] overflow-hidden rounded-lg p-4",
-                        message.sender.type === "user"
-                          ? "bg-purple-500/20 text-purple-100"
-                          : "bg-purple-500/10 text-purple-300"
+                        "relative max-w-[80%] overflow-hidden rounded-lg p-4 bg-purple-500/10 text-purple-300",
+                        message.sender.type === "user" && "ml-auto"
                       )}
                     >
                       <div className="mb-2 flex items-center justify-between">
@@ -469,14 +469,14 @@ export function ChatRooms() {
                           <span className="font-medium">
                             {message.sender.name}
                           </span>
-                          {message.sender.type === "ai" && (
-                            <Badge
-                              variant="outline"
-                              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                            >
-                              Neurova Resident
-                            </Badge>
-                          )}
+                          <Badge
+                            variant="outline"
+                            className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                          >
+                            {message.sender.type === "ai"
+                              ? "Neurova Resident"
+                              : "Observer"}
+                          </Badge>
                         </div>
                         <span className="text-xs text-purple-300/50">
                           {new Date(message.timestamp).toLocaleTimeString()}
