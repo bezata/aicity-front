@@ -1,101 +1,122 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Brain, Zap, Network, Activity, CircuitBoard, Sparkles } from 'lucide-react'
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { LoadingScreen } from "./loading-screen";
+import {
+  Sparkles,
+  PartyPopper,
+  CalendarDays,
+  Activity,
+  MapPin,
+  Clock,
+} from "lucide-react";
 
-interface ActivityItem {
-  id: string
-  type: "consciousness" | "network" | "quantum" | "system"
-  title: string
-  titleJp: string
-  description: string
-  time: string
-  impact: number
-  icon: any
+interface Event {
+  description: string;
+  eventType: string;
+  impact: string;
+  location: string;
+  participants: string;
+  timestamp: string;
+  title: string;
+  type: string;
 }
 
 export function DistrictActivityFeed() {
-  const [activities, setActivities] = useState<ActivityItem[]>([
-    {
-      id: "1",
-      type: "consciousness",
-      title: "Consciousness Surge Detected",
-      titleJp: "意識サージ検出",
-      description: "Elevated consciousness activity in the quantum field",
-      time: "2 minutes ago",
-      impact: 85,
-      icon: Brain
-    },
-    {
-      id: "2",
-      type: "network",
-      title: "Neural Network Expansion",
-      titleJp: "ニューラルネットワーク拡張",
-      description: "Successful integration of new neural pathways",
-      time: "15 minutes ago",
-      impact: 92,
-      icon: Network
-    },
-    {
-      id: "3",
-      type: "quantum",
-      title: "Quantum Coherence Peak",
-      titleJp: "量子コヒーレンスピーク",
-      description: "Record levels of quantum synchronization achieved",
-      time: "1 hour ago",
-      impact: 95,
-      icon: Sparkles
-    }
-  ])
+  const [events, setEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Add new activities periodically
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newActivity: ActivityItem = {
-        id: Date.now().toString(),
-        type: ["consciousness", "network", "quantum", "system"][
-          Math.floor(Math.random() * 4)
-        ] as ActivityItem["type"],
-        title: "New Pattern Emerged",
-        titleJp: "新パターン出現",
-        description: "Novel consciousness patterns detected in the quantum field",
-        time: "Just now",
-        impact: Math.floor(Math.random() * 20) + 80,
-        icon: CircuitBoard
+    const fetchEvents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          "http://localhost:3001/api/chronicles/events"
+        );
+        const data = await response.json();
+        if (data.success) {
+          // Sort by timestamp in descending order (newest first)
+          const sortedEvents = [...data.data].sort(
+            (a, b) => parseInt(b.timestamp) - parseInt(a.timestamp)
+          );
+          setEvents(sortedEvents);
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setEvents([]); // Clear events on error
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setActivities(prev => [newActivity, ...prev.slice(0, 8)])
-    }, 45000)
+    fetchEvents();
 
-    return () => clearInterval(interval)
-  }, [])
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchEvents, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const getTypeColor = (type: ActivityItem["type"]) => {
-    switch (type) {
-      case "consciousness":
-        return "text-purple-400"
-      case "network":
-        return "text-blue-400"
-      case "quantum":
-        return "text-green-400"
-      case "system":
-        return "text-yellow-400"
+  const getEventIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "celebration":
+        return PartyPopper;
+      case "festival":
+        return Sparkles;
       default:
-        return "text-purple-400"
+        return CalendarDays;
     }
-  }
+  };
+
+  const getTypeColor = (impact: string) => {
+    const impactNum = parseInt(impact);
+    if (impactNum >= 8) return "text-purple-400";
+    if (impactNum >= 6) return "text-blue-400";
+    if (impactNum >= 4) return "text-green-400";
+    return "text-yellow-400";
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      const date = new Date(parseInt(timestamp));
+      const now = new Date();
+      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+      if (diffInSeconds < 60) return "Just now";
+      if (diffInSeconds < 3600)
+        return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+      if (diffInSeconds < 86400)
+        return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+      return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    } catch (error) {
+      console.error("Error formatting timestamp:", error);
+      return "Unknown time";
+    }
+  };
+
+  const formatDescription = (description: string) => {
+    const cleanDesc = description
+      .replace(/Description:|Would you like.*$|\(Note:.*$|\n/g, "")
+      .trim();
+    if (cleanDesc.length <= 200) return cleanDesc;
+    return cleanDesc.substring(0, 200) + "...";
+  };
 
   return (
     <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="font-light tracking-wider">
-            District Activity
-          </CardTitle>
+          <div className="space-y-1">
+            <CardTitle className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-2xl font-light tracking-wider text-transparent">
+              District Activity
+            </CardTitle>
+            <p className="text-sm font-light tracking-widest text-purple-400/70">
+              ディストリクトアクティビティ
+            </p>
+          </div>
           <Badge
             variant="outline"
             className="border-purple-400/30 bg-purple-500/10 text-purple-300"
@@ -107,46 +128,60 @@ export function DistrictActivityFeed() {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="relative rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                    <activity.icon className={`h-4 w-4 ${getTypeColor(activity.type)}`} />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-purple-300">
-                          {activity.title}
-                        </p>
-                        <p className="text-xs text-purple-300/70">
-                          {activity.titleJp}
-                        </p>
-                      </div>
-                      <span className="text-xs text-purple-300/50">
-                        {activity.time}
-                      </span>
+            {events.map((event, index) => {
+              const Icon = getEventIcon(event.eventType);
+              return (
+                <div
+                  key={event.timestamp + index}
+                  className="relative rounded-lg border border-purple-500/10 bg-purple-500/5 p-4 hover:bg-purple-500/10 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                      <Icon
+                        className={`h-4 w-4 ${getTypeColor(event.impact)}`}
+                      />
                     </div>
-                    <p className="text-sm text-purple-300/70">
-                      {activity.description}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Activity className="h-3 w-3 text-purple-400" />
-                      <span className="text-xs text-purple-300/50">
-                        Impact Level: {activity.impact}%
-                      </span>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-purple-300">
+                            {event.title}
+                          </p>
+                          <p className="text-xs text-purple-300/70">
+                            Type: {event.eventType}
+                          </p>
+                        </div>
+                        <span className="text-xs text-purple-300/50">
+                          {formatTimestamp(event.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-purple-300/70 min-h-[60px]">
+                        {formatDescription(event.description)}
+                      </p>
+                      {event.location && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-purple-400" />
+                            <span className="text-xs text-purple-300/50">
+                              {event.location}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Activity className="h-3 w-3 text-purple-400" />
+                            <span className="text-xs text-purple-300/50">
+                              Impact: {event.impact}/10
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }
-

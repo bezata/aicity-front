@@ -1,94 +1,94 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Brain, Search, MapPin, ChevronRight, Building2, Globe, CircuitBoardIcon as Circuit, Users, MessageCircle } from 'lucide-react'
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import {
+  Brain,
+  Search,
+  MapPin,
+  ChevronRight,
+  Building2,
+  Globe,
+  CircuitBoardIcon as Circuit,
+  Users,
+  MessageCircle,
+} from "lucide-react";
 
 interface District {
-  id: string
-  name: string
-  nameJp: string
-  type: "quantum" | "cultural" | "research" | "residential"
-  population: number
-  status: "active" | "busy" | "peaceful"
-  icon: any
-  description: string
-  chatRoomId: string
+  id: string;
+  name: string;
+  nameJp: string;
+  type: "quantum" | "cultural" | "research" | "residential";
+  population: number;
+  status: "active" | "busy" | "peaceful";
+  icon: any;
+  description: string;
+  chatRoomId: string;
 }
 
 export function DistrictNavigation() {
-  const router = useRouter()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [districts] = useState<District[]>([
-    {
-      id: "quantum-district",
-      name: "Quantum District",
-      nameJp: "量子区",
-      type: "quantum",
-      population: 2749,
-      status: "active",
-      icon: Brain,
-      description: "Center of quantum computing research",
-      chatRoomId: "quantum"
-    },
-    {
-      id: "neo-tokyo",
-      name: "Neo-Tokyo Central",
-      nameJp: "新東京中央",
-      type: "cultural",
-      population: 5231,
-      status: "busy",
-      icon: Building2,
-      description: "Cultural and administrative hub",
-      chatRoomId: "zen"
-    },
-    {
-      id: "digital-gardens",
-      name: "Digital Gardens",
-      nameJp: "デジタル庭園",
-      type: "residential",
-      population: 1823,
-      status: "peaceful",
-      icon: Globe,
-      description: "Harmonious living spaces",
-      chatRoomId: "neural"
-    },
-    {
-      id: "research-nexus",
-      name: "Research Nexus",
-      nameJp: "研究ネクサス",
-      type: "research",
-      population: 3102,
-      status: "active",
-      icon: Circuit,
-      description: "Advanced research facilities",
-      chatRoomId: "quantum"
-    }
-  ])
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [districts, setDistricts] = useState<District[]>([]);
 
-  const filteredDistricts = districts.filter(district =>
-    district.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    district.nameJp.includes(searchQuery)
-  )
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/conversations");
+        const data = await response.json();
+
+        // Transform conversation data to match District interface
+        const transformedData: District[] = data.map((conv: any) => ({
+          id: conv.id,
+          name: conv.location,
+          nameJp: conv.topic,
+          type: "cultural",
+          population: conv.participants.length,
+          status: "active",
+          icon: Brain,
+          description: `${conv.activity} - ${conv.participants
+            .map((p: any) => p.name)
+            .join(", ")}`,
+          chatRoomId: conv.id,
+        }));
+
+        setDistricts(transformedData);
+      } catch (error) {
+        console.error("Error fetching districts:", error);
+      }
+    };
+
+    fetchDistricts();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchDistricts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredDistricts = districts.filter(
+    (district) =>
+      district.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      district.nameJp.includes(searchQuery)
+  );
 
   const getStatusColor = (status: District["status"]) => {
     switch (status) {
       case "active":
-        return "text-green-400 border-green-400/30 bg-green-500/10"
+        return "text-green-400 border-green-400/30 bg-green-500/10";
       case "busy":
-        return "text-yellow-400 border-yellow-400/30 bg-yellow-500/10"
+        return "text-yellow-400 border-yellow-400/30 bg-yellow-500/10";
       case "peaceful":
-        return "text-blue-400 border-blue-400/30 bg-blue-500/10"
+        return "text-blue-400 border-blue-400/30 bg-blue-500/10";
       default:
-        return "text-purple-400 border-purple-400/30 bg-purple-500/10"
+        return "text-purple-400 border-purple-400/30 bg-purple-500/10";
     }
-  }
+  };
 
   return (
     <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
@@ -119,8 +119,12 @@ export function DistrictNavigation() {
                       <div>
                         <div className="flex items-start justify-between">
                           <div>
-                            <h3 className="font-medium text-purple-300">{district.name}</h3>
-                            <p className="text-sm text-purple-300/70">{district.nameJp}</p>
+                            <h3 className="font-medium text-purple-300">
+                              {district.name}
+                            </h3>
+                            <p className="text-sm text-purple-300/70">
+                              {district.nameJp}
+                            </p>
                           </div>
                           <Badge
                             variant="outline"
@@ -136,14 +140,18 @@ export function DistrictNavigation() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 text-sm text-purple-300/70">
                           <Users className="h-4 w-4" />
-                          <span>{district.population.toLocaleString()} entities</span>
+                          <span>
+                            {district.population.toLocaleString()} participants
+                          </span>
                         </div>
                         <div className="flex gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
                             className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                            onClick={() => router.push(`/chat/${district.chatRoomId}`)}
+                            onClick={() =>
+                              router.push(`/chat/${district.chatRoomId}`)
+                            }
                           >
                             <MessageCircle className="h-4 w-4" />
                             Chat
@@ -152,7 +160,9 @@ export function DistrictNavigation() {
                             variant="ghost"
                             size="sm"
                             className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                            onClick={() => router.push(`/districts/${district.id}`)}
+                            onClick={() =>
+                              router.push(`/districts/${district.id}`)
+                            }
                           >
                             Enter
                             <ChevronRight className="h-4 w-4" />
@@ -168,6 +178,5 @@ export function DistrictNavigation() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
-

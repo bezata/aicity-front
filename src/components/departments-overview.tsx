@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -32,30 +32,32 @@ import {
 import { SessionViewer } from "@/components/session-viewer";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "./main-layout";
+import { LoadingScreen } from "./loading-screen";
 
 interface Department {
   id: string;
   name: string;
-  nameJp: string;
-  type: "Core" | "Support" | "Research";
+  type: string;
+  description: string;
+  assignedAgents: string[];
+  activeChats: any[];
+  currentProjects: any[];
+  metrics: {
+    efficiency: number;
+    responseTime: number;
+    successRate: number;
+    collaborationScore: number;
+  };
   budget: {
     total: number;
-    raised: number;
-  };
-  metrics: {
-    activeUsers: number;
-    responseTime: number;
-    incidents: number;
-    sessions: number;
-  };
-  latestIncident?: {
-    id: string;
-    title: string;
-    titleJp: string;
-    severity: "low" | "medium" | "high";
-    timestamp: string;
+    allocated: number;
+    spent: number;
+    donations: number;
+    expenses: any[];
+    donations_history: any[];
   };
 }
+
 interface DepartmentMetric {
   name: string;
   budget: number;
@@ -80,129 +82,10 @@ interface Session {
   }[];
 }
 
-const departments: Department[] = [
-  {
-    id: "neural-ops",
-    name: "Neural Operations",
-    nameJp: "ニューラル運営",
-    type: "Core",
-    budget: {
-      total: 1000000,
-      raised: 750000,
-    },
-    metrics: {
-      activeUsers: 1250,
-      responseTime: 45,
-      incidents: 2,
-      sessions: 15,
-    },
-    latestIncident: {
-      id: "inc-1",
-      title: "Minor neural pathway disruption in Sector 7",
-      titleJp: "セクター7での軽度なニューラル経路の混乱",
-      severity: "low",
-      timestamp: "2 hours ago",
-    },
-  },
-  {
-    id: "quantum-research",
-    name: "Quantum Research",
-    nameJp: "量子研究",
-    type: "Research",
-    budget: {
-      total: 2000000,
-      raised: 1200000,
-    },
-    metrics: {
-      activeUsers: 850,
-      responseTime: 65,
-      incidents: 1,
-      sessions: 8,
-    },
-  },
-  {
-    id: "cyber-security",
-    name: "Cyber Security",
-    nameJp: "サイバーセキュリティ",
-    type: "Core",
-    budget: {
-      total: 1500000,
-      raised: 1100000,
-    },
-    metrics: {
-      activeUsers: 950,
-      responseTime: 30,
-      incidents: 5,
-      sessions: 12,
-    },
-    latestIncident: {
-      id: "inc-2",
-      title: "Attempted unauthorized access detected",
-      titleJp: "不正アクセスの試みを検出",
-      severity: "medium",
-      timestamp: "1 hour ago",
-    },
-  },
-];
-
-const recentSessions: Session[] = [
-  {
-    id: "session-1",
-    departmentId: "neural-ops",
-    title: "Neural Network Optimization",
-    titleJp: "ニューラルネットワークの最適化",
-    participants: 8,
-    startTime: "10 minutes ago",
-    status: "live",
-  },
-  {
-    id: "session-2",
-    departmentId: "quantum-research",
-    title: "Quantum Entanglement Study",
-    titleJp: "量子もつれ研究",
-    participants: 5,
-    startTime: "2 hours ago",
-    status: "completed",
-  },
-  {
-    id: "session-3",
-    departmentId: "cyber-security",
-    title: "Security Protocol Review",
-    titleJp: "セキュリティプロトコルレビュー",
-    participants: 6,
-    startTime: "in 30 minutes",
-    status: "scheduled",
-  },
-];
-
-const getSessionStatusColor = (status: Session["status"]) => {
-  switch (status) {
-    case "live":
-      return "border-green-400/30 bg-green-500/10 text-green-300";
-    case "scheduled":
-      return "border-blue-400/30 bg-blue-500/10 text-blue-300";
-    case "completed":
-      return "border-purple-400/30 bg-purple-500/10 text-purple-300";
-    default:
-      return "border-purple-400/30 bg-purple-500/10 text-purple-300";
-  }
-};
-
-const getIncidentSeverityColor = (severity: "low" | "medium" | "high") => {
-  switch (severity) {
-    case "low":
-      return "border-yellow-400/30 bg-yellow-500/10 text-yellow-300";
-    case "medium":
-      return "border-orange-400/30 bg-orange-500/10 text-orange-300";
-    case "high":
-      return "border-red-400/30 bg-red-500/10 text-red-300";
-    default:
-      return "border-yellow-400/30 bg-yellow-500/10 text-yellow-300";
-  }
-};
-
 export function DepartmentsOverview() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedSession, setSelectedSession] = useState<
     | (Session & {
         participantsDetails: NonNullable<Session["participantsDetails"]>;
@@ -210,11 +93,31 @@ export function DepartmentsOverview() {
     | null
   >(null);
 
-  const departmentMetrics: DepartmentMetric[] = departments.map((dept) => ({
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("http://localhost:3001/api/departments");
+        const data = await response.json();
+        setDepartments(data);
+      } catch (error) {
+        console.error("Error fetching departments:", error);
+      }
+      setIsLoading(false);
+    };
+
+    fetchDepartments();
+  }, []);
+
+  const departmentMetrics = departments.map((dept) => ({
     name: dept.name,
-    budget: dept.budget.raised / 1000000,
-    sessions: dept.metrics.sessions,
+    budget: dept.budget.allocated / 1000000,
+    sessions: dept.assignedAgents.length,
   }));
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <MainLayout>
@@ -242,10 +145,10 @@ export function DepartmentsOverview() {
                     variant="outline"
                     className="border-purple-400/30 bg-purple-500/10 text-purple-300"
                   >
-                    {department.type}
+                    {department.type.replace(/_/g, " ")}
                   </Badge>
                 </CardTitle>
-                <CardDescription>{department.nameJp}</CardDescription>
+                <CardDescription>{department.description}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -255,7 +158,7 @@ export function DepartmentsOverview() {
                     </span>
                     <span>
                       {Math.round(
-                        (department.budget.raised / department.budget.total) *
+                        (department.budget.spent / department.budget.total) *
                           100
                       )}
                       %
@@ -263,14 +166,14 @@ export function DepartmentsOverview() {
                   </div>
                   <Progress
                     value={
-                      (department.budget.raised / department.budget.total) * 100
+                      (department.budget.spent / department.budget.total) * 100
                     }
                     className="h-2 bg-purple-500/10"
                     // @ts-ignore
                     indicatorClassName="bg-purple-500"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{department.budget.raised.toLocaleString()} CR</span>
+                    <span>{department.budget.spent.toLocaleString()} CR</span>
                     <span>{department.budget.total.toLocaleString()} CR</span>
                   </div>
                 </div>
@@ -278,12 +181,12 @@ export function DepartmentsOverview() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">
-                      Active Users
+                      Active Agents
                     </p>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-purple-400" />
                       <span className="text-sm font-medium">
-                        {department.metrics.activeUsers}
+                        {department.assignedAgents.length}
                       </span>
                     </div>
                   </div>
@@ -294,36 +197,11 @@ export function DepartmentsOverview() {
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-purple-400" />
                       <span className="text-sm font-medium">
-                        {department.metrics.responseTime}ms
+                        {Math.round(department.metrics.responseTime * 100)}%
                       </span>
                     </div>
                   </div>
                 </div>
-
-                {department.latestIncident && (
-                  <div className="rounded-lg border border-purple-500/10 bg-black/20 p-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <AlertTriangle className="h-4 w-4 text-yellow-400" />
-                      <span className="text-muted-foreground">
-                        Latest Incident
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={getIncidentSeverityColor(
-                          department.latestIncident.severity
-                        )}
-                      >
-                        {department.latestIncident.severity}
-                      </Badge>
-                    </div>
-                    <p className="mt-2 text-sm">
-                      {department.latestIncident.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {department.latestIncident.titleJp}
-                    </p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           ))}

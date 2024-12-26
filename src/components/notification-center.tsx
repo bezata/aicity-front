@@ -1,92 +1,130 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Bell, Brain, Star, Shield, Activity, CircuitBoardIcon as Circuit } from 'lucide-react'
+import * as React from "react";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { LoadingScreen } from "./loading-screen";
+import {
+  AlertTriangle,
+  Shield,
+  AlertCircle,
+  Activity,
+  MapPin,
+  Clock,
+} from "lucide-react";
 
-interface Notification {
-  id: string
-  type: "alert" | "achievement" | "system" | "event"
-  title: string
-  titleJp: string
-  message: string
-  time: string
-  read: boolean
-  icon: any
+interface Incident {
+  description: string;
+  incidentType: string;
+  involvedAgents: string;
+  location: string;
+  responseTeam: string;
+  severity: string;
+  status: string;
+  timestamp: string;
+  type: string;
 }
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      type: "alert",
-      title: "Quantum Anomaly Detected",
-      titleJp: "量子異常検出",
-      message: "Unusual patterns detected in sector 7. Investigation required.",
-      time: "Just now",
-      read: false,
-      icon: Shield
-    },
-    {
-      id: "2",
-      type: "achievement",
-      title: "New Achievement Unlocked",
-      titleJp: "新しい実績解除",
-      message: "Congratulations! You've achieved quantum harmony level 10.",
-      time: "5 mins ago",
-      read: false,
-      icon: Star
-    },
-    {
-      id: "3",
-      type: "system",
-      title: "System Update",
-      titleJp: "システム更新",
-      message: "Neural network optimization complete. 15% efficiency increase.",
-      time: "1 hour ago",
-      read: true,
-      icon: Circuit
-    }
-  ])
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Add new notifications periodically
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newNotification: Notification = {
-        id: Date.now().toString(),
-        type: ["alert", "achievement", "system", "event"][Math.floor(Math.random() * 4)] as Notification["type"],
-        title: "New Activity Detected",
-        titleJp: "新しいアクティビティ検出",
-        message: "New consciousness patterns emerging in the quantum field.",
-        time: "Just now",
-        read: false,
-        icon: Activity
+    const fetchIncidents = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(
+          "http://localhost:3001/api/chronicles/incidents"
+        );
+        const data = await response.json();
+        if (data.success) {
+          // Sort by timestamp in descending order (newest first)
+          const sortedIncidents = [...data.data].sort(
+            (a, b) => parseInt(b.timestamp) - parseInt(a.timestamp)
+          );
+          setIncidents(sortedIncidents);
+        }
+      } catch (error) {
+        console.error("Error fetching incidents:", error);
+        setIncidents([]); // Clear incidents on error
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setNotifications(prev => [newNotification, ...prev.slice(0, 8)])
-    }, 30000)
+    fetchIncidents();
 
-    return () => clearInterval(interval)
-  }, [])
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchIncidents, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const getIncidentIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "accident":
+        return AlertCircle;
+      case "arrest":
+        return Shield;
+      case "disturbance":
+        return AlertTriangle;
+      default:
+        return AlertTriangle;
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity.toLowerCase()) {
+      case "high":
+        return "text-red-400";
+      case "medium":
+        return "text-yellow-400";
+      case "low":
+        return "text-green-400";
+      default:
+        return "text-purple-400";
+    }
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      const date = new Date(parseInt(timestamp));
+      const now = new Date();
+      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+      if (diffInSeconds < 60) return "Just now";
+      if (diffInSeconds < 3600)
+        return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+      if (diffInSeconds < 86400)
+        return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+      return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    } catch (error) {
+      console.error("Error formatting timestamp:", error);
+      return "Unknown time";
+    }
+  };
+
+  const ongoingCount = incidents.filter((i) => i.status === "ongoing").length;
 
   return (
     <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="font-light tracking-wider">
-            Notifications
-          </CardTitle>
-          {unreadCount > 0 && (
+          <div className="space-y-1">
+            <CardTitle className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-2xl font-light tracking-wider text-transparent">
+              Notifications
+            </CardTitle>
+            <p className="text-sm font-light tracking-widest text-purple-400/70">
+              通知センター
+            </p>
+          </div>
+          {ongoingCount > 0 && (
             <Badge
               variant="outline"
               className="border-purple-400/30 bg-purple-500/10 text-purple-300"
             >
-              {unreadCount} new
+              {ongoingCount} ongoing
             </Badge>
           )}
         </div>
@@ -94,42 +132,64 @@ export function NotificationCenter() {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`rounded-lg border border-purple-500/10 bg-purple-500/5 p-4 transition-colors ${
-                  !notification.read ? "bg-purple-500/10" : ""
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                    <notification.icon className="h-4 w-4 text-purple-400" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-purple-300">
-                          {notification.title}
-                        </p>
-                        <p className="text-xs text-purple-300/70">
-                          {notification.titleJp}
-                        </p>
-                      </div>
-                      <span className="text-xs text-purple-300/50">
-                        {notification.time}
-                      </span>
+            {incidents.map((incident, index) => {
+              const Icon = getIncidentIcon(incident.incidentType);
+              return (
+                <div
+                  key={incident.timestamp + index}
+                  className={`rounded-lg border border-purple-500/10 bg-purple-500/5 p-4 transition-colors ${
+                    incident.status === "ongoing" ? "bg-purple-500/10" : ""
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                      <Icon
+                        className={`h-4 w-4 ${getSeverityColor(
+                          incident.severity
+                        )}`}
+                      />
                     </div>
-                    <p className="text-sm text-purple-300/70">
-                      {notification.message}
-                    </p>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-purple-300">
+                            {incident.incidentType.toUpperCase()}
+                          </p>
+                          <p className="text-xs text-purple-300/70">
+                            Status: {incident.status}
+                          </p>
+                        </div>
+                        <span className="text-xs text-purple-300/50">
+                          {formatTimestamp(incident.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-purple-300/70">
+                        {incident.description}
+                      </p>
+                      {incident.location && (
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-purple-400" />
+                            <span className="text-xs text-purple-300/50">
+                              {incident.location}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Activity className="h-3 w-3 text-purple-400" />
+                            <span className="text-xs text-purple-300/50">
+                              Severity: {incident.severity}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
-  )
+  );
 }
-

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { io, Socket } from "socket.io-client";
 import {
   Card,
   CardContent,
@@ -94,6 +95,7 @@ export function ChatRooms() {
   const [input, setInput] = useState("");
   const [connected, setConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const socketRef = useRef<Socket | null>(null);
   const [activeAgents] = useState<AIAgent[]>([
     {
       id: "1",
@@ -155,6 +157,57 @@ export function ChatRooms() {
     },
   ]);
 
+  // Socket.IO connection
+  useEffect(() => {
+    // Initialize socket connection
+    socketRef.current = io("http://localhost:3001", {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      path: "/ws",
+      transports: ["websocket"],
+      autoConnect: true,
+      forceNew: true,
+      timeout: 10000,
+      withCredentials: false,
+      extraHeaders: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+
+    // Connection event handlers
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Socket.IO connection error:", error);
+      setConnected(false);
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket.IO connected");
+      setConnected(true);
+    });
+
+    socketRef.current.on("disconnect", () => {
+      console.log("Socket.IO disconnected");
+      setConnected(false);
+    });
+
+    // Message handler
+    socketRef.current.on("agent_conversation", (data: WSMessage["data"]) => {
+      handleWebSocketMessage({
+        type: "agent_conversation",
+        timestamp: Date.now(),
+        data,
+      });
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Simulate messages for development (can be removed in production)
   useEffect(() => {
     const interval = setInterval(() => {
       const wsMessage: WSMessage = {
@@ -218,6 +271,14 @@ export function ChatRooms() {
       content: input,
       timestamp: new Date().toISOString(),
     };
+
+    // Emit message to server
+    if (socketRef.current) {
+      socketRef.current.emit("chat_message", {
+        content: input,
+        timestamp: Date.now(),
+      });
+    }
 
     setMessages((prev) => [...prev, newMessage]);
     setInput("");

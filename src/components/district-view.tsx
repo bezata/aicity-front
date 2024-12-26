@@ -1,6 +1,6 @@
 import * as React from "react";
 import { DistrictDetailedMetrics } from "./district-detailed-metrics";
-import { DistrictEvents } from "./district-events";
+
 import { DistrictActivityFeed } from "./district-activity-feed";
 import { CulturalShowcase } from "./cultural-showcase";
 import { QuantumConsciousnessMap } from "./quantum-consciousness-map";
@@ -52,9 +52,6 @@ export function DistrictView({ districtId }: { districtId: string }) {
             </div>
             <div className="rounded-lg border border-blue-500/10 bg-black/30 backdrop-blur-xl p-6">
               <NotificationCenter />
-            </div>
-            <div className="rounded-lg border border-blue-500/10 bg-black/30 backdrop-blur-xl p-6">
-              <DistrictEvents />
             </div>
           </div>
         </div>
