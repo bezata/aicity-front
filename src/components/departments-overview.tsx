@@ -34,6 +34,31 @@ import { cn } from "@/lib/utils";
 import { MainLayout } from "./main-layout";
 import { LoadingScreen } from "./loading-screen";
 
+interface AgentHealth {
+  physical: number;
+  mental: number;
+  energy: number;
+  motivation: number;
+  happiness: number;
+  satisfaction: number;
+  stress: number;
+}
+
+interface Metrics {
+  efficiency: number;
+  responseTime: number;
+  successRate: number;
+  collaborationScore: number;
+}
+
+interface PerformanceRecord {
+  timestamp: string;
+  description: string;
+  metrics: Metrics;
+  agentHealth: AgentHealth;
+  budgetHealth: number;
+}
+
 interface Department {
   id: string;
   name: string;
@@ -169,8 +194,6 @@ export function DepartmentsOverview() {
                       (department.budget.spent / department.budget.total) * 100
                     }
                     className="h-2 bg-purple-500/10"
-                    // @ts-ignore
-                    indicatorClassName="bg-purple-500"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>{department.budget.spent.toLocaleString()} CR</span>
@@ -270,68 +293,52 @@ export function DepartmentsOverview() {
             <CardContent>
               <ScrollArea className="h-[300px] pr-4">
                 <div className="space-y-4">
-                  {recentSessions.map((session) => {
-                    const department = departments.find(
-                      (d) => d.id === session.departmentId
-                    );
-                    if (!department) return null;
-
-                    return (
-                      <div
-                        key={session.id}
-                        className="flex items-start justify-between rounded-lg border border-purple-500/10 bg-black/20 p-3 hover:bg-black/30 transition-colors cursor-pointer"
-                        onClick={() =>
-                          setSelectedSession({
-                            ...session,
-                            participantsDetails: [
-                              {
-                                id: "agent1",
-                                name: "Quantum Mind Alpha",
-                                nameJp: "クァンタムマインドアルファ",
-                                role: "Neural Architect",
-                                avatar: "/placeholder.svg?height=40&width=40",
-                                isAgent: true,
-                              },
-                              {
-                                id: "agent2",
-                                name: "Neural Entity Beta",
-                                nameJp: "ニューラルエンティティベータ",
-                                role: "System Analyst",
-                                avatar: "/placeholder.svg?height=40&width=40",
-                                isAgent: true,
-                              },
-                              {
-                                id: "user1",
-                                name: "Observer",
-                                nameJp: "オブザーバー",
-                                role: "Human Observer",
-                                avatar: "/placeholder.svg?height=40&width=40",
-                              },
-                            ],
-                          })
-                        }
-                      >
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium">{session.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {session.titleJp}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Users className="h-3 w-3" />
-                            <span>{session.participants} participants</span>
-                            <span>•</span>
-                            <span>{session.startTime}</span>
-                          </div>
+                  {departments.map((department) => (
+                    <div
+                      key={department.id}
+                      className="flex items-start justify-between rounded-lg border border-purple-500/10 bg-black/20 p-3 hover:bg-black/30 transition-colors cursor-pointer"
+                      onClick={() =>
+                        setSelectedSession({
+                          id: department.id,
+                          departmentId: department.id,
+                          title: department.name,
+                          titleJp: department.name,
+                          participants: department.assignedAgents.length,
+                          startTime: "Active",
+                          status: "live",
+                          participantsDetails: department.assignedAgents.map(
+                            (agent, index) => ({
+                              id: agent,
+                              name: `Agent ${index + 1}`,
+                              nameJp: `エージェント ${index + 1}`,
+                              role: "Department Agent",
+                              avatar: "/placeholder.svg?height=40&width=40",
+                              isAgent: true,
+                            })
+                          ),
+                        })
+                      }
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{department.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {department.type}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>{department.assignedAgents.length} agents</span>
+                          <span>•</span>
+                          <span>Active</span>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={getSessionStatusColor(session.status)}
-                        >
-                          {session.status}
-                        </Badge>
                       </div>
-                    );
-                  })}
+                      <Badge
+                        variant="outline"
+                        className="border-green-400/30 bg-green-500/10 text-green-300"
+                      >
+                        live
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
               </ScrollArea>
             </CardContent>
