@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { io, Socket } from "socket.io-client";
 import {
   Card,
   CardContent,
@@ -115,8 +114,12 @@ export function ChatRooms() {
   const [currentConversation, setCurrentConversation] = useState<string | null>(
     null
   );
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const maxReconnectAttempts = 5;
+  const reconnectDelay = 1000;
   const [activeAgents] = useState<AIAgent[]>([
     {
       id: "1",
@@ -142,6 +145,7 @@ export function ChatRooms() {
     },
   ]);
 
+  // Fetch donation goals
   useEffect(() => {
     const fetchDonationGoals = async () => {
       try {
@@ -160,137 +164,101 @@ export function ChatRooms() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch past messages when conversation ID changes
-  useEffect(() => {
-    async function fetchPastMessages() {
-      if (!currentConversation) return;
+  const connectWebSocket = useCallback(() => {
+    if (
+      wsRef.current?.readyState === WebSocket.OPEN ||
+      reconnectAttempt >= maxReconnectAttempts
+    )
+      return;
 
-      try {
-        const response = await fetch(
-          `http://localhost:3001/api/conversations/${currentConversation}`
-        );
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch conversation: ${response.statusText}`
+    try {
+      wsRef.current = new WebSocket("ws://localhost:3001/ws");
+
+      wsRef.current.onopen = () => {
+        console.log("WebSocket connected");
+        setConnected(true);
+        setReconnectAttempt(0);
+
+        // Join conversation if exists
+        if (currentConversation) {
+          wsRef.current?.send(
+            JSON.stringify({
+              type: "join_conversation",
+              conversationId: currentConversation,
+            })
           );
         }
-        const data = await response.json();
+      };
 
-        // Transform API messages to match our Message interface
-        const transformedMessages = data.messages.map((msg: any) => ({
-          id: msg.id,
-          sender: {
-            name:
-              data.participants.find((p: any) => p.id === msg.agentId)?.name ||
-              "Unknown",
-            nameJp:
-              data.participants.find((p: any) => p.id === msg.agentId)?.role ||
-              "",
-            type: "ai",
-            role:
-              data.participants.find((p: any) => p.id === msg.agentId)?.role ||
-              "",
-            level: 95,
-          },
-          content: msg.content,
-          timestamp: new Date(msg.timestamp).toISOString(),
-          location: data.location,
-          activity: data.activity,
-          topic: data.topic,
-        }));
+      wsRef.current.onclose = () => {
+        console.log("WebSocket disconnected");
+        setConnected(false);
+        handleReconnect();
+      };
 
-        setMessages(transformedMessages);
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-      } catch (error) {
-        console.error("Error fetching past messages:", error);
-      }
+      wsRef.current.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        handleReconnect();
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "agent_conversation") {
+            if (!currentConversation) {
+              setCurrentConversation(data.data.conversationId);
+              wsRef.current?.send(
+                JSON.stringify({
+                  type: "join_conversation",
+                  conversationId: data.data.conversationId,
+                })
+              );
+            }
+
+            if (currentConversation === data.data.conversationId) {
+              handleWebSocketMessage(data);
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+    } catch (error) {
+      console.error("Error creating WebSocket connection:", error);
+      handleReconnect();
+    }
+  }, [currentConversation, reconnectAttempt]);
+
+  const handleReconnect = useCallback(() => {
+    if (reconnectAttempt >= maxReconnectAttempts) {
+      console.log("Max reconnection attempts reached");
+      return;
     }
 
-    fetchPastMessages();
-  }, [currentConversation]);
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
 
-  // Socket.IO connection
+    reconnectTimeoutRef.current = setTimeout(() => {
+      setReconnectAttempt((prev) => prev + 1);
+      connectWebSocket();
+    }, reconnectDelay * Math.pow(2, reconnectAttempt));
+  }, [reconnectAttempt, connectWebSocket]);
+
   useEffect(() => {
-    socketRef.current = io("http://localhost:3001", {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      path: "/ws",
-      transports: ["websocket"],
-      autoConnect: true,
-      forceNew: true,
-      timeout: 10000,
-      withCredentials: false,
-      extraHeaders: {
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
-
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Socket.IO connection error:", error);
-      setConnected(false);
-    });
-
-    socketRef.current.on("connect", () => {
-      console.log("Socket.IO connected");
-      setConnected(true);
-    });
-
-    socketRef.current.on("disconnect", () => {
-      console.log("Socket.IO disconnected");
-      setConnected(false);
-    });
-
-    // Message handler
-    socketRef.current.on("agent_conversation", (data: WSMessage["data"]) => {
-      // Set the current conversation ID if not set
-      if (!currentConversation) {
-        setCurrentConversation(data.conversationId);
-      }
-
-      // Only handle messages for the current conversation
-      if (currentConversation === data.conversationId) {
-        handleWebSocketMessage({
-          type: "agent_conversation",
-          timestamp: Date.now(),
-          data,
-        });
-      }
-    });
+    connectWebSocket();
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
       }
     };
-  }, [currentConversation]);
+  }, [connectWebSocket]);
 
-  // Simulate messages for development (can be removed in production)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const wsMessage: WSMessage = {
-        type: "agent_conversation",
-        timestamp: Date.now(),
-        data: {
-          conversationId: "conv-" + Date.now(),
-          message: {
-            content:
-              "Analyzing quantum fluctuations in sector 7. The patterns show interesting harmonics.",
-            agentName: "Quantum Mind Alpha",
-            agentRole: "Neural Architect",
-            timestamp: Date.now(),
-          },
-          location: "Neural Core",
-          activity: "pattern_analysis",
-          topic: "quantum_harmonics",
-        },
-      };
-      handleWebSocketMessage(wsMessage);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleWebSocketMessage = (wsMessage: WSMessage) => {
+  const handleWebSocketMessage = useCallback((wsMessage: WSMessage) => {
     if (wsMessage.type === "agent_conversation" && wsMessage.data?.message) {
       const { message, location, activity, topic } = wsMessage.data;
 
@@ -313,10 +281,10 @@ export function ChatRooms() {
       setMessages((prev) => [...prev, newMessage]);
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  };
+  }, []);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = useCallback(() => {
+    if (!input.trim() || wsRef.current?.readyState !== WebSocket.OPEN) return;
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -329,18 +297,19 @@ export function ChatRooms() {
       timestamp: new Date().toISOString(),
     };
 
-    // Emit message to server
-    if (socketRef.current) {
-      socketRef.current.emit("chat_message", {
+    wsRef.current.send(
+      JSON.stringify({
+        type: "chat_message",
+        conversationId: currentConversation,
         content: input,
         timestamp: Date.now(),
-      });
-    }
+      })
+    );
 
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [input, currentConversation]);
 
   const getEventTypeIcon = (departmentId: string) => {
     switch (departmentId) {
