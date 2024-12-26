@@ -474,7 +474,7 @@ export function ChatRooms() {
                               variant="outline"
                               className="border-purple-400/30 bg-purple-500/10 text-purple-300"
                             >
-                              Lvl {message.sender.level}
+                              Neurova Resident
                             </Badge>
                           )}
                         </div>
