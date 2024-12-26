@@ -74,30 +74,6 @@ export function CityEventsPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate random donations
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setEvents((prevEvents) =>
-        prevEvents.map((event) => {
-          if (event.currentAmount >= event.targetAmount) return event;
-
-          const donation = Math.floor(Math.random() * 1000);
-          const newCurrent = Math.min(
-            event.targetAmount,
-            event.currentAmount + donation
-          );
-
-          return {
-            ...event,
-            currentAmount: newCurrent,
-          };
-        })
-      );
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const getEventTypeIcon = (departmentId: string) => {
     switch (departmentId) {
       case "education":
@@ -124,6 +100,16 @@ export function CityEventsPanel() {
         4) *
         100
     );
+  };
+
+  const formatDuration = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours === 0) {
+      return `${minutes}m`;
+    }
+    return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
   };
 
   return (
@@ -208,12 +194,6 @@ export function CityEventsPanel() {
                       <Progress
                         value={(event.currentAmount / event.targetAmount) * 100}
                         className="h-2 bg-purple-500/10"
-                        // @ts-ignore
-                        indicatorClassName={
-                          event.currentAmount >= event.targetAmount
-                            ? "bg-green-500"
-                            : "bg-purple-500"
-                        }
                       />
                       <div className="flex items-center justify-between text-xs text-purple-300/50">
                         <span>{event.currentAmount.toLocaleString()} CR</span>
@@ -227,7 +207,9 @@ export function CityEventsPanel() {
                           <p className="text-xs text-purple-300/50">Category</p>
                           <div className="flex items-center gap-1 text-purple-300">
                             <PartyPopper className="h-3 w-3" />
-                            <span>{event.celebrationEvent.category}</span>
+                            <span className="capitalize">
+                              {event.celebrationEvent.category}
+                            </span>
                           </div>
                         </div>
                         <div className="space-y-1">
@@ -238,6 +220,15 @@ export function CityEventsPanel() {
                             <Activity className="h-3 w-3" />
                             <span>
                               {getImpactScore(event.celebrationEvent.impact)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-purple-300/50">Duration</p>
+                          <div className="flex items-center gap-1 text-purple-300">
+                            <Timer className="h-3 w-3" />
+                            <span>
+                              {formatDuration(event.celebrationEvent.duration)}
                             </span>
                           </div>
                         </div>

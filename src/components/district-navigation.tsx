@@ -1,182 +1,173 @@
 "use client";
 
-import * as React from "react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Brain,
-  Search,
   MapPin,
-  ChevronRight,
-  Building2,
-  Globe,
-  CircuitBoardIcon as Circuit,
   Users,
   MessageCircle,
+  Activity,
+  ChevronRight,
 } from "lucide-react";
 
-interface District {
+interface Participant {
   id: string;
   name: string;
-  nameJp: string;
-  type: "quantum" | "cultural" | "research" | "residential";
-  population: number;
-  status: "active" | "busy" | "peaceful";
-  icon: any;
-  description: string;
-  chatRoomId: string;
+  role: string;
+  personality: string;
+  interests: string[];
+}
+
+interface Message {
+  id: string;
+  agentId: string;
+  content: string;
+  timestamp: number;
+  role: string;
+  sentiment?: number;
+}
+
+interface Conversation {
+  id: string;
+  messages: Message[];
+  participants: Participant[];
+  activity: string;
+  location: string;
+  topic: string;
+  status: string;
+  lastUpdateTime: number;
+  isEnded: boolean;
 }
 
 export function DistrictNavigation() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [districts, setDistricts] = useState<District[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
-    const fetchDistricts = async () => {
+    async function fetchConversations() {
       try {
         const response = await fetch("http://localhost:3001/api/conversations");
+        if (!response.ok) {
+          throw new Error("Failed to fetch conversations");
+        }
         const data = await response.json();
-
-        // Transform conversation data to match District interface
-        const transformedData: District[] = data.map((conv: any) => ({
-          id: conv.id,
-          name: conv.location,
-          nameJp: conv.topic,
-          type: "cultural",
-          population: conv.participants.length,
-          status: "active",
-          icon: Brain,
-          description: `${conv.activity} - ${conv.participants
-            .map((p: any) => p.name)
-            .join(", ")}`,
-          chatRoomId: conv.id,
-        }));
-
-        setDistricts(transformedData);
+        // Only keep active and not ended conversations
+        setConversations(
+          data.filter(
+            (conv: Conversation) => conv.status === "active" && !conv.isEnded
+          )
+        );
       } catch (error) {
-        console.error("Error fetching districts:", error);
+        console.error("Error fetching conversations:", error);
       }
-    };
+    }
 
-    fetchDistricts();
-
+    fetchConversations();
     // Refresh every 30 seconds
-    const interval = setInterval(fetchDistricts, 30000);
+    const interval = setInterval(fetchConversations, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const filteredDistricts = districts.filter(
-    (district) =>
-      district.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      district.nameJp.includes(searchQuery)
-  );
-
-  const getStatusColor = (status: District["status"]) => {
-    switch (status) {
-      case "active":
-        return "text-green-400 border-green-400/30 bg-green-500/10";
-      case "busy":
-        return "text-yellow-400 border-yellow-400/30 bg-yellow-500/10";
-      case "peaceful":
-        return "text-blue-400 border-blue-400/30 bg-blue-500/10";
-      default:
-        return "text-purple-400 border-purple-400/30 bg-purple-500/10";
-    }
-  };
+  const filteredConversations = conversations.filter((conv) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      conv.location.toLowerCase().includes(searchLower) ||
+      conv.topic.toLowerCase().includes(searchLower) ||
+      conv.activity.toLowerCase().includes(searchLower)
+    );
+  });
 
   return (
-    <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-      <CardContent className="p-4">
-        <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-300/50" />
-            <Input
-              placeholder="Search districts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 border-purple-500/10 bg-black/20 font-light text-purple-300 placeholder:text-purple-300/50"
-            />
-          </div>
-
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-2 pr-4">
-              {filteredDistricts.map((district) => (
-                <div
-                  key={district.id}
-                  className="group rounded-lg border border-purple-500/10 bg-black/30 p-4 transition-all hover:bg-purple-500/5"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                      <district.icon className="h-5 w-5 text-purple-400" />
+    <div className="flex h-full flex-col space-y-4">
+      <div className="flex items-center space-x-2">
+        <Input
+          placeholder="Search locations or topics..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="h-9 border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
+        />
+      </div>
+      <ScrollArea className="flex-1">
+        <div className="grid gap-2">
+          {filteredConversations.length > 0 ? (
+            filteredConversations.map((conv) => (
+              <Card
+                key={conv.id}
+                className="border-purple-500/10 bg-black/20 transition-colors hover:bg-black/30"
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-purple-400" />
+                        <span className="text-sm font-medium text-purple-300">
+                          {conv.location}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                      >
+                        {conv.activity.replace(/_/g, " ")}
+                      </Badge>
                     </div>
-                    <div className="flex-1 space-y-2">
-                      <div>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium text-purple-300">
-                              {district.name}
-                            </h3>
-                            <p className="text-sm text-purple-300/70">
-                              {district.nameJp}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={getStatusColor(district.status)}
-                          >
-                            {district.status}
-                          </Badge>
-                        </div>
-                        <p className="mt-1 text-sm text-purple-300/50">
-                          {district.description}
+
+                    <div className="flex flex-wrap gap-2 text-xs text-purple-300/70">
+                      <div className="flex items-center gap-1">
+                        <MessageCircle className="h-3 w-3" />
+                        <span>{conv.topic.replace(/_/g, " ")}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{conv.participants.length} Participants</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Activity className="h-3 w-3" />
+                        <span>
+                          {new Date(conv.lastUpdateTime).toLocaleTimeString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {conv.messages.length > 0 && (
+                      <div className="rounded-md border border-purple-500/10 bg-purple-500/5 p-2 text-xs text-purple-300/70">
+                        <p className="line-clamp-2">
+                          {conv.messages[conv.messages.length - 1].content}
                         </p>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-purple-300/70">
-                          <Users className="h-4 w-4" />
-                          <span>
-                            {district.population.toLocaleString()} participants
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                            onClick={() =>
-                              router.push(`/chat/${district.chatRoomId}`)
-                            }
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            Chat
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                            onClick={() =>
-                              router.push(`/districts/${district.id}`)
-                            }
-                          >
-                            Enter
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                    )}
+
+                    <Button
+                      onClick={() => router.push(`/chat/${conv.id}`)}
+                      className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      Enter Chat
+                      <ChevronRight className="h-4 w-4 ml-auto" />
+                    </Button>
                   </div>
-                </div>
-              ))}
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[200px] text-center p-4">
+              <MessageCircle className="h-8 w-8 text-purple-400/50 mb-2" />
+              <p className="text-sm text-purple-300/70">
+                No active conversations at the moment
+              </p>
+              <p className="text-xs text-purple-300/50">
+                Check back later for new discussions
+              </p>
             </div>
-          </ScrollArea>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </ScrollArea>
+    </div>
   );
 }

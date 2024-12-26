@@ -13,27 +13,36 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Activity, DollarSign } from "lucide-react";
 import { DepartmentSessions } from "./department-sessions";
+import React from "react";
 
 interface DepartmentPageProps {
-  department: Department;
-}
-interface Department {
-  id: string;
-  name: string;
-  nameJp: string;
-  icon: React.ElementType;
-  status: string;
-  longDescription: string;
-  stats: {
-    staff: number;
-    activeProjects: number;
-    efficiency: number;
-    budget: {
-      raised: number;
-      total: number;
+  department: {
+    id: string;
+    name: string;
+    type: string;
+    description: string;
+    assignedAgents: string[];
+    activeChats: any[];
+    currentProjects: any[];
+    metrics: {
+      efficiency: number;
+      responseTime: number;
+      successRate: number;
+      collaborationScore: number;
     };
+    budget: {
+      total: number;
+      allocated: number;
+      spent: number;
+      donations: number;
+      expenses: any[];
+      donations_history: any[];
+    };
+    status?: string;
+    icon?: React.ElementType;
   };
 }
+
 export function DepartmentPage({ department }: DepartmentPageProps) {
   const router = useRouter();
 
@@ -54,14 +63,16 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
             <CardHeader>
               <div className="flex items-center gap-3">
                 <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                  {/* @ts-ignore */}
-                  <department.icon className="h-6 w-6 text-purple-400" />
+                  {department.icon &&
+                    React.createElement(department.icon, {
+                      className: "h-6 w-6 text-purple-400",
+                    })}
                 </div>
                 <div>
                   <CardTitle className="text-2xl font-light tracking-wider">
                     {department.name}
                   </CardTitle>
-                  <CardDescription>{department.nameJp}</CardDescription>
+                  <CardDescription>{department.description}</CardDescription>
                 </div>
                 <Badge
                   variant="outline"
@@ -73,10 +84,6 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <p className="text-purple-300/70">
-                  {department.longDescription}
-                </p>
-
                 <div className="grid gap-6 md:grid-cols-2">
                   <Card className="border-purple-500/10 bg-black/20">
                     <CardContent className="pt-6">
@@ -86,7 +93,7 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-2xl font-light text-purple-300">
-                          {department.stats.staff}
+                          {department.assignedAgents.length}
                         </p>
                         <Badge
                           variant="outline"
@@ -108,7 +115,7 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-2xl font-light text-purple-300">
-                          {department.stats.activeProjects}
+                          {department.currentProjects.length}
                         </p>
                         <Badge
                           variant="outline"
@@ -127,11 +134,11 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                       Department Efficiency
                     </span>
                     <span className="font-medium text-purple-300">
-                      {department.stats.efficiency}%
+                      {Math.round(department.metrics.efficiency * 100)}%
                     </span>
                   </div>
                   <Progress
-                    value={department.stats.efficiency}
+                    value={department.metrics.efficiency * 100}
                     className="h-1 bg-purple-500/10"
                   />
                 </div>
@@ -154,8 +161,8 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                     <span className="text-purple-300/70">Budget Progress</span>
                     <span className="font-medium text-purple-300">
                       {Math.round(
-                        (department.stats.budget.raised /
-                          department.stats.budget.total) *
+                        (department.budget.allocated /
+                          department.budget.total) *
                           100
                       )}
                       %
@@ -163,19 +170,18 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                   </div>
                   <Progress
                     value={
-                      (department.stats.budget.raised /
-                        department.stats.budget.total) *
+                      (department.budget.allocated / department.budget.total) *
                       100
                     }
                     className="h-2 bg-purple-500/10"
                   />
                   <div className="flex items-center justify-between text-sm text-purple-300/50">
                     <span>
-                      {department.stats.budget.raised.toLocaleString()} CR
-                      raised
+                      {department.budget.allocated.toLocaleString()} CR
+                      allocated
                     </span>
                     <span>
-                      {department.stats.budget.total.toLocaleString()} CR goal
+                      {department.budget.total.toLocaleString()} CR total
                     </span>
                   </div>
                 </div>

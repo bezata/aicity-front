@@ -9,6 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +31,11 @@ import {
   Radio,
   Users,
   DollarSign,
+  GraduationCap,
+  Leaf,
+  Heart,
+  Palette,
+  Construction,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -78,22 +84,37 @@ interface AIAgent {
   location?: string;
 }
 
-interface DonationProject {
-  id: string;
+interface CelebrationEvent {
   title: string;
-  titleJp: string;
   description: string;
-  goal: number;
-  current: number;
-  deadline: string;
-  supporters: number;
-  icon: any;
+  duration: number;
+  category: string;
+  impact: {
+    social: number;
+    economic: number;
+    cultural: number;
+    environmental: number;
+  };
+}
+
+interface DonationGoal {
+  id: string;
+  departmentId: string;
+  targetAmount: number;
+  currentAmount: number;
+  title: string;
+  description: string;
+  celebrationEvent: CelebrationEvent;
 }
 
 export function ChatRooms() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [connected, setConnected] = useState(false);
+  const [donationProjects, setDonationProjects] = useState<DonationGoal[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<string | null>(
+    null
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [activeAgents] = useState<AIAgent[]>([
@@ -121,45 +142,75 @@ export function ChatRooms() {
     },
   ]);
 
-  const [donationProjects] = useState<DonationProject[]>([
-    {
-      id: "1",
-      title: "Neural Network Expansion",
-      titleJp: "ニューラルネットワーク拡張",
-      description: "Expand the city's neural network capacity by 30%",
-      goal: 100000,
-      current: 68000,
-      deadline: "48 hours",
-      supporters: 342,
-      icon: Brain,
-    },
-    {
-      id: "2",
-      title: "Quantum Consciousness Hub",
-      titleJp: "量子意識ハブ",
-      description: "Build a new quantum consciousness synchronization hub",
-      goal: 250000,
-      current: 175000,
-      deadline: "5 days",
-      supporters: 891,
-      icon: Sparkles,
-    },
-    {
-      id: "3",
-      title: "AI Entity Development",
-      titleJp: "AIエンティティ開発",
-      description: "Fund the development of new AI entities for the city",
-      goal: 150000,
-      current: 45000,
-      deadline: "7 days",
-      supporters: 234,
-      icon: CircuitBoard,
-    },
-  ]);
+  useEffect(() => {
+    const fetchDonationGoals = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:3001/api/donations/goals"
+        );
+        const data = await response.json();
+        setDonationProjects(data);
+      } catch (error) {
+        console.error("Error fetching donation goals:", error);
+      }
+    };
+
+    fetchDonationGoals();
+    const interval = setInterval(fetchDonationGoals, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch past messages when conversation ID changes
+  useEffect(() => {
+    async function fetchPastMessages() {
+      if (!currentConversation) return;
+
+      try {
+        const response = await fetch(
+          `http://localhost:3001/api/conversations/${currentConversation}`
+        );
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch conversation: ${response.statusText}`
+          );
+        }
+        const data = await response.json();
+
+        // Transform API messages to match our Message interface
+        const transformedMessages = data.messages.map((msg: any) => ({
+          id: msg.id,
+          sender: {
+            name:
+              data.participants.find((p: any) => p.id === msg.agentId)?.name ||
+              "Unknown",
+            nameJp:
+              data.participants.find((p: any) => p.id === msg.agentId)?.role ||
+              "",
+            type: "ai",
+            role:
+              data.participants.find((p: any) => p.id === msg.agentId)?.role ||
+              "",
+            level: 95,
+          },
+          content: msg.content,
+          timestamp: new Date(msg.timestamp).toISOString(),
+          location: data.location,
+          activity: data.activity,
+          topic: data.topic,
+        }));
+
+        setMessages(transformedMessages);
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      } catch (error) {
+        console.error("Error fetching past messages:", error);
+      }
+    }
+
+    fetchPastMessages();
+  }, [currentConversation]);
 
   // Socket.IO connection
   useEffect(() => {
-    // Initialize socket connection
     socketRef.current = io("http://localhost:3001", {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -174,7 +225,6 @@ export function ChatRooms() {
       },
     });
 
-    // Connection event handlers
     socketRef.current.on("connect_error", (error) => {
       console.error("Socket.IO connection error:", error);
       setConnected(false);
@@ -192,20 +242,27 @@ export function ChatRooms() {
 
     // Message handler
     socketRef.current.on("agent_conversation", (data: WSMessage["data"]) => {
-      handleWebSocketMessage({
-        type: "agent_conversation",
-        timestamp: Date.now(),
-        data,
-      });
+      // Set the current conversation ID if not set
+      if (!currentConversation) {
+        setCurrentConversation(data.conversationId);
+      }
+
+      // Only handle messages for the current conversation
+      if (currentConversation === data.conversationId) {
+        handleWebSocketMessage({
+          type: "agent_conversation",
+          timestamp: Date.now(),
+          data,
+        });
+      }
     });
 
-    // Cleanup on unmount
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
     };
-  }, []);
+  }, [currentConversation]);
 
   // Simulate messages for development (can be removed in production)
   useEffect(() => {
@@ -283,6 +340,44 @@ export function ChatRooms() {
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const getEventTypeIcon = (departmentId: string) => {
+    switch (departmentId) {
+      case "education":
+        return GraduationCap;
+      case "parks":
+        return Leaf;
+      case "health":
+        return Heart;
+      case "culture":
+        return Palette;
+      case "infrastructure":
+        return Construction;
+      default:
+        return Activity;
+    }
+  };
+
+  const formatDuration = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours === 0) {
+      return `${minutes}m`;
+    }
+    return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+  };
+
+  const getImpactScore = (impact: CelebrationEvent["impact"]) => {
+    return Math.round(
+      ((impact.social +
+        impact.economic +
+        impact.cultural +
+        impact.environmental) /
+        4) *
+        100
+    );
   };
 
   return (
@@ -519,14 +614,19 @@ export function ChatRooms() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                          <project.icon className="h-4 w-4 text-purple-400" />
+                          {React.createElement(
+                            getEventTypeIcon(project.departmentId),
+                            {
+                              className: "h-4 w-4 text-purple-400",
+                            }
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-purple-300">
                             {project.title}
                           </p>
                           <p className="text-xs text-purple-300/70">
-                            {project.titleJp}
+                            {project.celebrationEvent.title}
                           </p>
                         </div>
                       </div>
@@ -539,7 +639,10 @@ export function ChatRooms() {
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-purple-300/70">Progress</span>
                           <span className="font-medium text-purple-300">
-                            {Math.round((project.current / project.goal) * 100)}
+                            {Math.round(
+                              (project.currentAmount / project.targetAmount) *
+                                100
+                            )}
                             %
                           </span>
                         </div>
@@ -548,7 +651,8 @@ export function ChatRooms() {
                             className="absolute inset-y-0 left-0 bg-purple-500 transition-all duration-500"
                             style={{
                               width: `${
-                                (project.current / project.goal) * 100
+                                (project.currentAmount / project.targetAmount) *
+                                100
                               }%`,
                             }}
                           >
@@ -556,19 +660,28 @@ export function ChatRooms() {
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs text-purple-300/50">
-                          <span>{project.current.toLocaleString()} CR</span>
-                          <span>{project.goal.toLocaleString()} CR</span>
+                          <span>
+                            {project.currentAmount.toLocaleString()} CR
+                          </span>
+                          <span>
+                            {project.targetAmount.toLocaleString()} CR
+                          </span>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between text-xs text-purple-300/70">
                         <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{project.supporters} supporters</span>
+                          <Activity className="h-3 w-3" />
+                          <span>
+                            Impact:{" "}
+                            {getImpactScore(project.celebrationEvent.impact)}%
+                          </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span>{project.deadline}</span>
+                          <span>
+                            {formatDuration(project.celebrationEvent.duration)}
+                          </span>
                         </div>
                       </div>
 

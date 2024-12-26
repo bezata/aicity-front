@@ -116,7 +116,9 @@ export function MainDashboard() {
       setIsLoading(true);
       try {
         // Fetch districts
-        const districtsResponse = await fetch("/api/districts");
+        const districtsResponse = await fetch(
+          "http://localhost:3001/api/districts"
+        );
         const districtsData = await districtsResponse.json();
         if (districtsData.success && districtsData.data) {
           console.log("Districts data:", districtsData.data); // Debug log

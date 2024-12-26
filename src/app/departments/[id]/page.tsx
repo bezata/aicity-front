@@ -1,18 +1,20 @@
-import { Metadata } from "next";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useState, useEffect } from "react";
+import { notFound, useParams } from "next/navigation";
 import { Building2, Shield, Brain, Users, Activity } from "lucide-react";
 import { DepartmentPage } from "@/components/department-page";
+import { LoadingScreen } from "@/components/loading-screen";
+import { MainLayout } from "@/components/main-layout";
 
 function getIcon(type: string) {
   switch (type.toLowerCase()) {
-    case "core":
+    case "economy":
       return Building2;
-    case "security":
+    case "emergency_response":
       return Shield;
-    case "research":
-      return Brain;
-    case "community":
-      return Users;
+    case "law_enforcement":
+      return Shield;
     default:
       return Activity;
   }
@@ -21,76 +23,79 @@ function getIcon(type: string) {
 interface Department {
   id: string;
   name: string;
-  nameJp: string;
   type: string;
   description: string;
-  longDescription: string;
-  stats: {
-    staff: number;
-    activeProjects: number;
+  assignedAgents: string[];
+  activeChats: any[];
+  currentProjects: any[];
+  metrics: {
     efficiency: number;
-    budget: {
-      total: number;
-      raised: number;
-      remaining: number;
-    };
+    responseTime: number;
+    successRate: number;
+    collaborationScore: number;
   };
-  status: string;
-  icon: any;
+  budget: {
+    total: number;
+    allocated: number;
+    spent: number;
+    donations: number;
+    expenses: any[];
+    donations_history: any[];
+  };
+  status?: string;
+  icon?: any;
 }
 
-async function getDepartment(id: string): Promise<Department> {
-  try {
-    const response = await fetch(`http://localhost:3001/api/departments/${id}`);
-    const { data } = await response.json();
+export default function Page() {
+  const params = useParams();
+  const [department, setDepartment] = useState<Department | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    const department = {
-      id: id,
-      name: data.name,
-      nameJp: data.nameJp,
-      type: data.type,
-      description: data.description,
-      longDescription: data.longDescription,
-      stats: {
-        staff: data.stats.staff,
-        activeProjects: data.stats.activeProjects,
-        efficiency: data.stats.efficiency,
-        budget: {
-          total: data.stats.budget.total,
-          raised: data.stats.budget.raised,
-          remaining: data.stats.budget.total - data.stats.budget.raised,
-        },
-      },
-      status: "active",
-      icon: getIcon(data.type),
-    };
+  useEffect(() => {
+    async function fetchDepartment() {
+      try {
+        const response = await fetch("http://localhost:3001/api/departments");
+        if (!response.ok) {
+          throw new Error(
+            `Failed to fetch departments: ${response.statusText}`
+          );
+        }
 
-    return department;
-  } catch (error) {
-    console.error("Error fetching department:", error);
-    throw error;
+        const departments = await response.json();
+        const dept = departments.find((d: Department) => d.id === params.id);
+
+        if (!dept) {
+          notFound();
+          return;
+        }
+
+        setDepartment({
+          ...dept,
+          status: "active",
+          icon: getIcon(dept.type),
+        });
+      } catch (error) {
+        console.error("Error fetching department:", error);
+        notFound();
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchDepartment();
+  }, [params.id]);
+
+  if (isLoading) {
+    return <LoadingScreen />;
   }
-}
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string };
-}): Promise<Metadata> {
-  const department = await getDepartment(params.id);
+  if (!department) {
+    return null;
+  }
 
-  return {
-    title: `${department.name} - AI City Departments`,
-    description: department.description,
-    openGraph: {
-      title: `${department.name} - AI City Departments`,
-      description: department.description,
-    },
-  };
-}
-
-export default async function Page({ params }: { params: { id: string } }) {
-  const department = await getDepartment(params.id);
-
-  return <DepartmentPage department={department} />;
+  return (
+    <MainLayout>
+      <DepartmentPage department={department} />
+    </MainLayout>
+  );
 }

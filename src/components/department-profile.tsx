@@ -192,16 +192,14 @@ export function DepartmentProfile() {
           <div className="flex gap-2">
             <Button
               className="flex-1 gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              onClick={() => router.push("/departments/public-development")}
+              onClick={() => router.push("http://localhost:3000/economy-dept")}
             >
               View Department
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
               className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              onClick={() =>
-                router.push("/departments/public-development/donate")
-              }
+              onClick={() => router.push("http://localhost:3000/departments")}
             >
               <DollarSign className="h-4 w-4" />
               Support
