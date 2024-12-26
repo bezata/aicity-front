@@ -165,47 +165,60 @@ export function ChatRooms() {
       location: "Quantum Hub",
     },
   ]);
+  const [recentUserMessages] = useState<Set<string>>(new Set());
 
   const handleWebSocketMessage = useCallback((wsMessage: WSMessage | any) => {
-    // Handle agent conversations
-    if (wsMessage.type === "agent_conversation" && wsMessage.data?.message) {
+    if (wsMessage.type === "agent_conversation") {
       const { message, location, activity, topic } = wsMessage.data;
 
-      const newMessage: Message = {
-        id: message.timestamp.toString(),
-        sender: {
-          name: message.agentName,
-          nameJp: message.agentRole,
-          type: "ai",
-          role: message.agentRole,
-          level: 95,
-        },
-        content: message.content,
-        timestamp: new Date(message.timestamp).toISOString(),
-        location,
-        activity,
-        topic,
-      };
+      // Only process if it's an AI message (has agentName and agentRole)
+      if (message.agentName && message.agentRole) {
+        setMessages((prevMessages) => {
+          const newMessage: Message = {
+            id: message.timestamp.toString(),
+            sender: {
+              name: message.agentName,
+              nameJp: message.agentRole,
+              type: "ai",
+              role: message.agentRole,
+              level: 95,
+            },
+            content: message.content,
+            timestamp: new Date(message.timestamp).toISOString(),
+            location,
+            activity,
+            topic,
+          };
 
-      setMessages((prev) => [...prev, newMessage]);
+          return [...prevMessages, newMessage];
+        });
+      }
+      // Completely ignore user messages from WebSocket
     }
     // Handle system messages
     else if (wsMessage.type === "system_message") {
-      const newMessage: Message = {
-        id: wsMessage.timestamp.toString(),
-        sender: {
-          name: "System",
-          nameJp: "システム",
-          type: "system",
-        },
-        content: wsMessage.data.content,
-        timestamp: new Date(wsMessage.timestamp).toISOString(),
-      };
+      setMessages((prevMessages) => {
+        if (
+          prevMessages.some((msg) => msg.id === wsMessage.timestamp.toString())
+        ) {
+          return prevMessages;
+        }
 
-      setMessages((prev) => [...prev, newMessage]);
+        const newMessage: Message = {
+          id: wsMessage.timestamp.toString(),
+          sender: {
+            name: "System",
+            nameJp: "システム",
+            type: "system",
+          },
+          content: wsMessage.data.content,
+          timestamp: new Date(wsMessage.timestamp).toISOString(),
+        };
+
+        return [...prevMessages, newMessage];
+      });
     }
 
-    // Scroll to bottom after any new message
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
@@ -256,16 +269,24 @@ export function ChatRooms() {
           id: msg.id,
           sender: {
             name:
-              data.participants.find((p) => p.id === msg.agentId)?.name ||
-              msg.agentId,
+              msg.role === "assistant"
+                ? data.participants.find((p) => p.id === msg.agentId)?.name ||
+                  msg.agentId
+                : "User",
             nameJp:
-              data.participants.find((p) => p.id === msg.agentId)?.role || "",
+              msg.role === "assistant"
+                ? data.participants.find((p) => p.id === msg.agentId)?.role ||
+                  ""
+                : "ユーザー",
             type: (msg.role === "assistant" ? "ai" : "user") as
               | "user"
               | "ai"
               | "system",
-            role: data.participants.find((p) => p.id === msg.agentId)?.role,
-            level: 95,
+            role:
+              msg.role === "assistant"
+                ? data.participants.find((p) => p.id === msg.agentId)?.role
+                : undefined,
+            level: msg.role === "assistant" ? 95 : undefined,
           },
           content: msg.content,
           timestamp: new Date(msg.timestamp).toISOString(),
@@ -324,34 +345,35 @@ export function ChatRooms() {
   const handleSend = useCallback(() => {
     if (!input.trim() || !connected) return;
 
-    // Find the latest message to get current conversation context
-    const latestMessage = messages[messages.length - 1];
+    const timestamp = new Date().toISOString();
+    const messageId = Date.now().toString();
 
+    // Immediately add message to UI
     const newMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       sender: {
-        name: "Observer",
-        nameJp: "オブザーバー",
+        name: "User",
+        nameJp: "ユーザー",
         type: "user",
       },
       content: input.trim(),
-      timestamp: new Date().toISOString(),
-      // Use the latest conversation context for user messages
-      location: latestMessage?.location,
-      activity: latestMessage?.activity,
-      topic: latestMessage?.topic,
+      timestamp,
+      // Use the last message's context if available
+      location: messages[messages.length - 1]?.location,
+      activity: messages[messages.length - 1]?.activity,
+      topic: messages[messages.length - 1]?.topic,
     };
 
-    // Update UI first
     setMessages((prev) => [...prev, newMessage]);
 
-    // Send the correctly formatted message
+    // Send via WebSocket
     sendMessage({
       type: "user_message",
       conversationId: currentConversation,
       content: input.trim(),
     });
 
+    // Clear input and scroll
     setInput("");
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [input, currentConversation, connected, sendMessage, messages]);
@@ -475,7 +497,7 @@ export function ChatRooms() {
                           >
                             {message.sender.type === "ai"
                               ? "Neurova Resident"
-                              : "Observer"}
+                              : "User"}
                           </Badge>
                         </div>
                         <span className="text-xs text-purple-300/50">
