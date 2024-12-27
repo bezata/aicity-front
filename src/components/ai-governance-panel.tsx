@@ -56,10 +56,19 @@ export function CityEventsPanel() {
   const [selectedProject, setSelectedProject] = useState<DonationGoal | null>(
     null
   );
+  const apiKey = process.env.BACKEND_API_KEY;
 
   const fetchDonationGoals = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/donations/goals");
+      const response = await fetch(
+        `${process.env.BACKEND_API_URL}api/donations/goals`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey && { "x-api-key": apiKey }),
+          },
+        }
+      );
       const data = await response.json();
       setEvents(data);
     } catch (error) {

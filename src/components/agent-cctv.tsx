@@ -175,6 +175,7 @@ const getLogTypeColor = (type: LogEntry["type"]) => {
 };
 
 export function AgentCCTV() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const [agents, setAgents] = useState<AIAgent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
   const [isConnected, setIsConnected] = useState(true);
@@ -197,7 +198,15 @@ export function AgentCCTV() {
     const fetchAgents = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:3001/api/agents");
+        const response = await fetch(
+          `${process.env.BACKEND_API_URL}api/agents`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
+        );
         const data: AgentsResponse = await response.json();
 
         // Combine all agents and remove duplicates
@@ -247,14 +256,15 @@ export function AgentCCTV() {
           return;
         }
       }
-
+      const apiKey = process.env.BACKEND_API_KEY;
       // Fetch new observation if needed
       const response = await fetch(
-        `http://localhost:3001/api/cctv/observe/${agentId}`,
+        `${process.env.BACKEND_API_URL}/api/cctv/observe/${agentId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(apiKey && { "x-api-key": apiKey }),
           },
         }
       );
@@ -304,7 +314,15 @@ export function AgentCCTV() {
       if (cached) {
         setIsConnected(true);
       } else {
-        fetch(`http://localhost:3001/api/cctv/observe/${selectedAgent.id}`)
+        fetch(
+          `${process.env.BACKEND_API_URL}api/cctv/observe/${selectedAgent.id}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
+        )
           .then(() => setIsConnected(true))
           .catch(() => setIsConnected(false));
       }

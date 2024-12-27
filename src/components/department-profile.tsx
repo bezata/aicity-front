@@ -56,12 +56,19 @@ export function DepartmentProfile() {
   const [performanceData, setPerformanceData] =
     useState<DepartmentPerformance | null>(null);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const apiKey = process.env.BACKEND_API_KEY;
 
   useEffect(() => {
     const fetchPerformanceData = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3001/api/departments/economy-dept/performance/history"
+          `${process.env.BACKEND_API_URL}api/departments/economy-dept/performance/history`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         const data = await response.json();
         setPerformanceData(data);

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_URL = "http://localhost:3001/api";
+const API_URL = process.env.BACKEND_API_URL;
+const apiKey = process.env.BACKEND_API_KEY;
 
 export async function GET(
   request: NextRequest,
@@ -33,6 +34,7 @@ export async function PUT(
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          ...(apiKey && { "x-api-key": apiKey }),
         },
         body: JSON.stringify(body),
       }
@@ -56,6 +58,9 @@ export async function DELETE(
       `${API_URL}/districts/${params.id}/chatrooms/${params.chatroomId}`,
       {
         method: "DELETE",
+        headers: {
+          ...(apiKey && { "x-api-key": apiKey }),
+        },
       }
     );
     return NextResponse.json({ success: true });

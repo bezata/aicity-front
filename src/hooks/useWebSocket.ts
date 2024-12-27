@@ -115,7 +115,9 @@ export function useWebSocket(url: string, options: WebSocketOptions = {}) {
     if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     try {
-      wsRef.current = new WebSocket(url);
+      const apiKey = process.env.BACKEND_API_KEY;
+      const wsUrl = apiKey ? `${url}?api_key=${apiKey}` : url;
+      wsRef.current = new WebSocket(wsUrl);
       setConnectionState("connecting");
 
       // Set connection timeout

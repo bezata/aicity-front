@@ -52,7 +52,14 @@ export function DistrictNavigation() {
   useEffect(() => {
     async function fetchConversations() {
       try {
-        const response = await fetch("http://localhost:3001/api/conversations");
+        const response = await fetch(
+          `${process.env.BACKEND_API_URL}/api/conversations`,
+          {
+            headers: {
+              "x-api-key": process.env.BACKEND_API_KEY || "",
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch conversations");
         }

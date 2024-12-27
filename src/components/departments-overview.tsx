@@ -98,6 +98,7 @@ interface Session {
 
 export function DepartmentsOverview() {
   const router = useRouter();
+  const apiKey = process.env.BACKEND_API_KEY;
   const { address } = useAppKitAccount();
   const [isLoading, setIsLoading] = useState(true);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -161,7 +162,13 @@ export function DepartmentsOverview() {
     const fetchActiveSessions = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3001/api/collaborations"
+          `${process.env.BACKEND_API_URL}api/collaborations`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch collaborations");
@@ -263,7 +270,15 @@ export function DepartmentsOverview() {
     const fetchDepartments = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:3001/api/departments");
+        const response = await fetch(
+          `${process.env.BACKEND_API_URL}api/departments`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }

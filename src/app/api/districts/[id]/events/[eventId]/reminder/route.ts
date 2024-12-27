@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_URL = "http://localhost:3001/api";
+const API_URL = process.env.BACKEND_API_URL;
 
 export async function POST(
   request: NextRequest,

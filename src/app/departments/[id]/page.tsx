@@ -54,7 +54,9 @@ export default function Page() {
   useEffect(() => {
     async function fetchDepartment() {
       try {
-        const response = await fetch("http://localhost:3001/api/departments");
+        const response = await fetch(
+          "process.env.BACKEND_API_URLapi/departments"
+        );
         if (!response.ok) {
           throw new Error(
             `Failed to fetch departments: ${response.statusText}`

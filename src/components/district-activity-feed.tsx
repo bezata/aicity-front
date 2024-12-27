@@ -27,6 +27,7 @@ interface Event {
 }
 
 export function DistrictActivityFeed() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +36,13 @@ export function DistrictActivityFeed() {
       try {
         setIsLoading(true);
         const response = await fetch(
-          "http://localhost:3001/api/chronicles/events"
+          `${process.env.BACKEND_API_URL}api/chronicles/events`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         const data = await response.json();
         if (data.success) {

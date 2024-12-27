@@ -117,7 +117,12 @@ export function MainDashboard() {
       try {
         // Fetch districts
         const districtsResponse = await fetch(
-          "http://localhost:3001/api/districts"
+          `${process.env.BACKEND_API_URL}/api/districts`,
+          {
+            headers: {
+              "x-api-key": process.env.BACKEND_API_KEY || "",
+            },
+          }
         );
         const districtsData = await districtsResponse.json();
         if (districtsData.success && districtsData.data) {
@@ -128,9 +133,30 @@ export function MainDashboard() {
         // Fetch metrics in parallel
         const [metricsResponse, vitalsResponse, safetyResponse] =
           await Promise.all([
-            fetch(`/api/districts/${districtId}/metrics`),
-            fetch(`/api/districts/${districtId}/vitals`),
-            fetch(`/api/districts/${districtId}/metrics/safety`),
+            fetch(
+              `${process.env.BACKEND_API_URL}/api/districts/${districtId}/metrics`,
+              {
+                headers: {
+                  "x-api-key": process.env.BACKEND_API_KEY || "",
+                },
+              }
+            ),
+            fetch(
+              `${process.env.BACKEND_API_URL}/api/districts/${districtId}/vitals`,
+              {
+                headers: {
+                  "x-api-key": process.env.BACKEND_API_KEY || "",
+                },
+              }
+            ),
+            fetch(
+              `${process.env.BACKEND_API_URL}/api/districts/${districtId}/metrics/safety`,
+              {
+                headers: {
+                  "x-api-key": process.env.BACKEND_API_KEY || "",
+                },
+              }
+            ),
           ]);
 
         const [metrics, vitals, safety] = await Promise.all([
