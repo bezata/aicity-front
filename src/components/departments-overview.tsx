@@ -33,33 +33,7 @@ import { SessionViewer } from "@/components/session-viewer";
 import { cn } from "@/lib/utils";
 import { MainLayout } from "./main-layout";
 import { LoadingScreen } from "./loading-screen";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { useAppKitAccount } from "@reown/appkit/react";
-
-interface AgentHealth {
-  physical: number;
-  mental: number;
-  energy: number;
-  motivation: number;
-  happiness: number;
-  satisfaction: number;
-  stress: number;
-}
-
-interface Metrics {
-  efficiency: number;
-  responseTime: number;
-  successRate: number;
-  collaborationScore: number;
-}
-
-interface PerformanceRecord {
-  timestamp: string;
-  description: string;
-  metrics: Metrics;
-  agentHealth: AgentHealth;
-  budgetHealth: number;
-}
 
 interface Department {
   id: string;
@@ -99,7 +73,7 @@ interface Session {
   participants: number;
   startTime: string;
   status: "live" | "scheduled" | "completed";
-  participantsDetails?: {
+  participantsDetails: {
     id: string;
     name: string;
     nameJp: string;
@@ -107,19 +81,19 @@ interface Session {
     avatar: string;
     isAgent?: boolean;
   }[];
-}
-
-interface EmergencyMessage {
-  type: "system_message";
-  timestamp: number;
-  data: {
+  messages?: {
+    id: string;
     content: string;
-    activity: string;
-    agents: {
+    sender: {
       id: string;
       name: string;
-    }[];
-  };
+      nameJp: string;
+      role: string;
+      avatar: string;
+      isAgent?: boolean;
+    };
+    timestamp: string;
+  }[];
 }
 
 export function DepartmentsOverview() {
@@ -127,118 +101,157 @@ export function DepartmentsOverview() {
   const { address } = useAppKitAccount();
   const [isLoading, setIsLoading] = useState(true);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [selectedSession, setSelectedSession] = useState<
-    | (Session & {
-        participantsDetails: NonNullable<Session["participantsDetails"]>;
-      })
-    | null
-  >(null);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
 
-  const handleWebSocketMessage = useCallback(
-    (wsMessage: any) => {
-      if (
-        wsMessage.type === "system_message" &&
-        wsMessage.data.activity === "emergency"
-      ) {
-        // Create a new session from emergency message
-        const emergencySession: Session = {
-          id: `emergency-${wsMessage.timestamp}`,
-          departmentId: wsMessage.data.departmentId || "emergency",
-          title: wsMessage.data.content,
-          titleJp: wsMessage.data.content,
-          participants: wsMessage.data.agents.length,
-          startTime: new Date(wsMessage.timestamp).toISOString(),
-          status: "live",
-          participantsDetails: wsMessage.data.agents.map((agent: any) => ({
-            id: agent.id,
-            name: agent.name,
-            nameJp: `エージェント`,
-            role: "Emergency Responder",
-            avatar: "/placeholder.svg?height=40&width=40",
-            isAgent: true,
-          })),
-        };
-
-        setActiveSessions((prev) => {
-          // Check if this emergency session already exists
-          if (prev.some((s) => s.id === emergencySession.id)) {
-            return prev;
-          }
-          return [emergencySession, ...prev];
-        });
-      } else if (wsMessage.type === "agent_conversation") {
-        const { message, conversationId } = wsMessage.data;
-        if (selectedSession?.id === conversationId) {
-          setSelectedSession((prev) => {
-            if (!prev) return null;
-            return {
-              ...prev,
-              participantsDetails: [...prev.participantsDetails],
-            };
-          });
-        }
-      }
-    },
-    [selectedSession]
-  );
-
-  const { connected, connectionState, sendMessage } = useWebSocket(
-    "ws://localhost:3001/ws",
+  const emergencyAlerts = [
     {
-      onMessage: handleWebSocketMessage,
-    }
-  );
+      id: "emergency-1",
+      title: "🚨 Emergency Alert",
+      titleJp: "緊急アラート",
+      content:
+        "🌸 Cherry blossom festival preparations needed! All hands on deck for this beautiful emergency! 🎋",
+      departmentId: "culture",
+      participants: 3,
+      status: "live",
+    },
+    {
+      id: "emergency-2",
+      title: "🚨 Emergency Alert",
+      titleJp: "緊急アラート",
+      content:
+        "🐱 Cat stuck in a quantum computer! Need immediate assistance from our tech team! 🖥️",
+      departmentId: "tech",
+      participants: 4,
+      status: "live",
+    },
+    {
+      id: "emergency-3",
+      title: "🚨 Emergency Alert",
+      titleJp: "緊急アラート",
+      content:
+        "🎮 Virtual reality festival overload! Too much fun detected in sector 7! 🎉",
+      departmentId: "entertainment",
+      participants: 5,
+      status: "live",
+    },
+    {
+      id: "emergency-4",
+      title: "🚨 Emergency Alert",
+      titleJp: "緊急アラート",
+      content:
+        "🌈 Rainbow bridge malfunction! Need immediate recalibration of happiness levels! ✨",
+      departmentId: "infrastructure",
+      participants: 3,
+      status: "live",
+    },
+    {
+      id: "emergency-5",
+      title: "🚨 Emergency Alert",
+      titleJp: "緊急アラート",
+      content:
+        "🍜 Ramen shortage detected! Emergency noodle supply needed in downtown district! 🥢",
+      departmentId: "services",
+      participants: 4,
+      status: "live",
+    },
+  ];
 
   useEffect(() => {
     const fetchActiveSessions = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3001/api/sessions/active"
+          "http://localhost:3001/api/collaborations"
         );
         if (!response.ok) {
-          throw new Error("Failed to fetch active sessions");
+          throw new Error("Failed to fetch collaborations");
         }
         const data = await response.json();
-        setActiveSessions(data);
+        if (data.success) {
+          const formattedSessions = data.data.map((collab: any) => ({
+            id: collab.id,
+            departmentId: collab.agents[0]?.id || "unknown",
+            title: collab.messages[0]?.topics?.includes("emergency")
+              ? "Emergency Alert"
+              : collab.messages[0]?.content.split("\n")[0] ||
+                "Untitled Session",
+            titleJp: collab.messages[0]?.content.split("\n")[1] || "",
+            participants: collab.agents.length,
+            startTime: new Date(collab.messages[0]?.timestamp).toISOString(),
+            status: collab.status,
+            participantsDetails: collab.agents.map((agent: any) => ({
+              id: agent.id,
+              name: agent.name || agent.id,
+              nameJp: `エージェント`,
+              role: "Collaborator",
+              avatar: "/placeholder.svg?height=40&width=40",
+              isAgent: true,
+            })),
+            messages: collab.messages.map((msg: any) => ({
+              id: msg.timestamp.toString(),
+              content: msg.content,
+              sender: {
+                id: msg.agentId,
+                name:
+                  collab.agents.find((a: any) => a.id === msg.agentId)?.name ||
+                  msg.agentId,
+                nameJp: `エージェント`,
+                role: "Collaborator",
+                avatar: "/placeholder.svg?height=40&width=40",
+                isAgent: true,
+              },
+              timestamp: new Date(msg.timestamp).toISOString(),
+            })),
+          }));
+
+          // Add random emergency alerts
+          const randomEmergencies = emergencyAlerts
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 2)
+            .map((alert) => ({
+              ...alert,
+              startTime: new Date().toISOString(),
+              participantsDetails: Array(alert.participants).fill({
+                id: "agent",
+                name: "Emergency Agent",
+                nameJp: "緊急対応エージェント",
+                role: "Emergency Responder",
+                avatar: "/placeholder.svg?height=40&width=40",
+                isAgent: true,
+              }),
+              messages: [
+                {
+                  id: Date.now().toString(),
+                  content: alert.content,
+                  sender: {
+                    id: "system",
+                    name: "System",
+                    nameJp: "システム",
+                    role: "Alert System",
+                    avatar: "/placeholder.svg?height=40&width=40",
+                    isAgent: true,
+                  },
+                  timestamp: new Date().toISOString(),
+                },
+              ],
+            }));
+
+          setActiveSessions([...randomEmergencies, ...formattedSessions]);
+        }
       } catch (error) {
-        console.error("Error fetching active sessions:", error);
+        console.error("Error fetching collaborations:", error);
       }
     };
 
     fetchActiveSessions();
-    // Fetch active sessions every 30 seconds
-    const interval = setInterval(fetchActiveSessions, 30000);
+    // Fetch every 5 minutes
+    const interval = setInterval(fetchActiveSessions, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (connected && selectedSession) {
-      sendMessage({
-        type: "join_conversation",
-        conversationId: selectedSession.id,
-      });
-    }
-  }, [connected, selectedSession, sendMessage]);
-
-  const handleJoinSession = useCallback(
-    (session: Session) => {
-      if (!connected || !address) return;
-
-      // Send join session message via WebSocket
-      sendMessage({
-        type: "join_conversation",
-        conversationId: session.id,
-      });
-
-      // Ensure participantsDetails is defined
-      setSelectedSession({
-        ...session,
-        participantsDetails: session.participantsDetails || [],
-      });
-    },
-    [connected, address, sendMessage]
-  );
+  const handleViewSession = useCallback((session: Session) => {
+    setSelectedSession(session);
+  }, []);
 
   const departmentMetrics = departments.map((dept) => ({
     name: dept.name,
@@ -277,6 +290,129 @@ export function DepartmentsOverview() {
             City Departments Overview
           </h1>
           <p className="text-muted-foreground">部門の概要</p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="font-light tracking-wider">
+                Department Metrics
+              </CardTitle>
+              <CardDescription>部門メトリクス</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                className="h-[300px]"
+                config={{
+                  budget: { label: "Budget", color: "#a855f7" },
+                  sessions: { label: "Sessions", color: "#6366f1" },
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={departmentMetrics}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-purple-500/10"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Bar
+                      name="Budget (M NRA)"
+                      dataKey="budget"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      name="Active Sessions"
+                      dataKey="sessions"
+                      fill="hsl(var(--secondary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
+            <CardHeader>
+              <div>
+                <CardTitle className="font-light tracking-wider">
+                  Recent Sessions
+                </CardTitle>
+                <CardDescription>最近のセッション</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-4">
+                  {activeSessions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[250px] text-center space-y-3">
+                      <Brain className="h-12 w-12 text-purple-400/50 animate-pulse" />
+                      <p className="text-sm font-medium text-purple-300">
+                        Departments are taking a little break... 😴
+                      </p>
+                      <p className="text-xs text-purple-300/70">
+                        部門はちょっと休憩中...
+                      </p>
+                    </div>
+                  ) : (
+                    activeSessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className="flex items-start justify-between rounded-lg border border-purple-500/10 bg-black/20 p-3 hover:bg-black/30 transition-colors cursor-pointer"
+                        onClick={() => handleViewSession(session)}
+                      >
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{session.title}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {session.titleJp}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Users className="h-3 w-3" />
+                            <span>{session.participants} participants</span>
+                            <span>•</span>
+                            <span>{session.status}</span>
+                            {session.id.startsWith("emergency-") && (
+                              <>
+                                <span>•</span>
+                                <AlertTriangle className="h-3 w-3 text-yellow-400" />
+                                <span className="text-yellow-400">
+                                  Emergency
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "border-purple-400/30 bg-purple-500/10",
+                            session.status === "live"
+                              ? "border-green-400/30 bg-green-500/10 text-green-300"
+                              : "text-purple-300"
+                          )}
+                        >
+                          {session.status}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -353,132 +489,6 @@ export function DepartmentsOverview() {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-            <CardHeader>
-              <CardTitle className="font-light tracking-wider">
-                Department Metrics
-              </CardTitle>
-              <CardDescription>部門メトリクス</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                className="h-[300px]"
-                config={{
-                  budget: { label: "Budget", color: "#a855f7" },
-                  sessions: { label: "Sessions", color: "#6366f1" },
-                }}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={departmentMetrics}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-purple-500/10"
-                    />
-                    <XAxis
-                      dataKey="name"
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="hsl(var(--muted-foreground))"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <Bar
-                      name="Budget (M NRA)"
-                      dataKey="budget"
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      name="Active Sessions"
-                      dataKey="sessions"
-                      fill="hsl(var(--secondary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-
-          <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="font-light tracking-wider">
-                    Live Sessions
-                  </CardTitle>
-                  <CardDescription>最近のセッション</CardDescription>
-                </div>
-                {connected ? (
-                  <Badge
-                    variant="outline"
-                    className="border-green-400/30 bg-green-500/10 text-green-300"
-                  >
-                    Connected
-                  </Badge>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="border-yellow-400/30 bg-yellow-500/10 text-yellow-300"
-                  >
-                    Connecting...
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-4">
-                  {activeSessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="flex items-start justify-between rounded-lg border border-purple-500/10 bg-black/20 p-3 hover:bg-black/30 transition-colors cursor-pointer"
-                      onClick={() => handleJoinSession(session)}
-                    >
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{session.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {session.titleJp}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3" />
-                          <span>{session.participants} participants</span>
-                          <span>•</span>
-                          <span>{session.status}</span>
-                          {session.id.startsWith("emergency-") && (
-                            <>
-                              <span>•</span>
-                              <AlertTriangle className="h-3 w-3 text-yellow-400" />
-                              <span className="text-yellow-400">Emergency</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "border-purple-400/30 bg-purple-500/10",
-                          session.status === "live"
-                            ? "border-green-400/30 bg-green-500/10 text-green-300"
-                            : "text-purple-300"
-                        )}
-                      >
-                        {session.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
         </div>
 
         {selectedSession && (

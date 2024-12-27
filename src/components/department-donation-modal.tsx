@@ -25,32 +25,12 @@ import {
   type Provider,
 } from "@reown/appkit-adapter-solana/react";
 
-interface DonationModalProps {
+interface DepartmentDonationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  projectTitle: string;
-  projectId: string;
+  departmentName: string;
+  departmentId: string;
   onDonationComplete?: () => void;
-  project: {
-    id: string;
-    departmentId: string;
-    targetAmount: number;
-    currentAmount: number;
-    title: string;
-    description: string;
-    celebrationEvent: {
-      title: string;
-      description: string;
-      duration: number;
-      category: string;
-      impact: {
-        social: number;
-        economic: number;
-        cultural: number;
-        environmental: number;
-      };
-    };
-  };
 }
 
 type DonationState = "input" | "processing" | "success" | "error";
@@ -59,14 +39,13 @@ const PROGRAM_ID = new PublicKey(
   "FW3YLzmZnyVQXgf7dWPCK1AnkENxCnk65yh2nihKoyYV"
 );
 
-export function DonationModal({
+export function DepartmentDonationModal({
   isOpen,
   onClose,
-  projectTitle,
-  projectId,
+  departmentName,
+  departmentId,
   onDonationComplete,
-  project,
-}: DonationModalProps) {
+}: DepartmentDonationModalProps) {
   const [amount, setAmount] = useState("");
   const [donationState, setDonationState] = useState<DonationState>("input");
   const [progress, setProgress] = useState(0);
@@ -96,7 +75,7 @@ export function DonationModal({
       setProgress(40);
 
       const userPubkey = new PublicKey(address);
-      const projectPubkey = new PublicKey(projectId);
+      const departmentPubkey = new PublicKey(departmentId);
 
       const donateIx = new TransactionInstruction({
         programId: PROGRAM_ID,
@@ -107,7 +86,7 @@ export function DonationModal({
             isWritable: true,
           },
           {
-            pubkey: projectPubkey,
+            pubkey: departmentPubkey,
             isSigner: false,
             isWritable: true,
           },
@@ -145,22 +124,14 @@ export function DonationModal({
           userName: "Reown Donor",
           amount: Number(amount),
           districtId: "central-district",
-          departmentId: project.departmentId,
-          purpose: project.title,
-          category: project.celebrationEvent.category,
+          departmentId: departmentId,
+          purpose: `Support for ${departmentName}`,
+          category: "department_support",
           subcategory: {
-            [project.celebrationEvent.category]: {
-              tradition:
-                project.departmentId === "culture" ? "Local Arts" : undefined,
-              festival: project.celebrationEvent.title,
-              program: project.title,
-              community: `${
-                project.departmentId.charAt(0).toUpperCase() +
-                project.departmentId.slice(1)
-              } Community`,
-              impact: Object.entries(project.celebrationEvent.impact).sort(
-                ([, a], [, b]) => b - a
-              )[0][0],
+            department_support: {
+              department: departmentName,
+              purpose: "General Support",
+              impact: "operational",
             },
           },
         }),
@@ -191,7 +162,7 @@ export function DonationModal({
       <DialogContent className="border-purple-500/10 bg-black/90 text-purple-50 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-light tracking-wider">
-            Support Project
+            Support Department
           </DialogTitle>
         </DialogHeader>
 
@@ -200,7 +171,7 @@ export function DonationModal({
             <div className="space-y-4">
               <p className="text-sm text-purple-300/70">
                 Enter the amount of tokens you would like to donate to support{" "}
-                <span className="text-purple-300">{projectTitle}</span>
+                <span className="text-purple-300">{departmentName}</span>
               </p>
 
               <div className="relative">
@@ -289,7 +260,7 @@ export function DonationModal({
                   Donation Successful!
                 </p>
                 <p className="text-sm text-purple-300/70">
-                  Thank you for supporting this project
+                  Thank you for supporting this department
                 </p>
               </div>
             </div>

@@ -421,62 +421,23 @@ export function AgentCCTV() {
                           <div className="flex flex-col gap-3">
                             <div className="flex items-center gap-2">
                               <Brain className="h-4 w-4 text-purple-400 shrink-0" />
-                              <div className="text-sm text-purple-300 space-y-2">
+                              <div className="text-sm text-purple-300">
+                                {/* Show truncated version in live feed */}
                                 {observation.narrative
-                                  .split("\n\n")
-                                  .map((paragraph, index) => {
-                                    // Skip empty paragraphs
-                                    if (!paragraph.trim()) return null;
-
-                                    // Handle bullet points
-                                    if (paragraph.includes("* ")) {
-                                      return (
-                                        <div key={index} className="space-y-1">
-                                          <p className="text-purple-300/70 text-xs">
-                                            Additional observations:
-                                          </p>
-                                          <ul className="list-none space-y-1">
-                                            {paragraph
-                                              .split("* ")
-                                              .map((bullet, bulletIndex) => {
-                                                if (!bullet.trim()) return null;
-                                                return (
-                                                  <li
-                                                    key={bulletIndex}
-                                                    className="flex items-center gap-2"
-                                                  >
-                                                    <div className="w-1 h-1 rounded-full bg-purple-400"></div>
-                                                    {bullet.trim()}
-                                                  </li>
-                                                );
-                                              })}
-                                          </ul>
-                                        </div>
-                                      );
-                                    }
-
-                                    // Regular paragraphs
-                                    return (
-                                      <p
-                                        key={index}
-                                        className={
-                                          index === 0
-                                            ? "text-purple-300"
-                                            : "text-purple-300/80"
-                                        }
-                                      >
-                                        {paragraph
-                                          .replace("End Report.", "")
-                                          .replace("[END OF RECORDING]", "")
-                                          .replace("[CCTV SYSTEM SHUTDOWN]", "")
-                                          .replace(
-                                            "[WARNING: SYSTEM UPDATE IMMINENT]",
-                                            ""
-                                          )
-                                          .trim()}
-                                      </p>
-                                    );
-                                  })}
+                                  .replace(/\[.*?\]/g, "")
+                                  .replace(/\d+\./g, "")
+                                  .replace(/\[CCTV SURVEILLANCE LOG\]/g, "")
+                                  .replace(/\[END OF ENTRY\]/g, "")
+                                  .replace(/\[END OF RECORDING\]/g, "")
+                                  .replace(/\[CCTV SYSTEM SHUTDOWN\]/g, "")
+                                  .replace("END OF ENTRY", "")
+                                  .replace(
+                                    /\[WARNING: SYSTEM UPDATE IMMINENT\]/g,
+                                    ""
+                                  )
+                                  .trim()
+                                  .slice(0, 200)}
+                                {observation.narrative.length > 200 && "..."}
                               </div>
                             </div>
                             <p className="text-sm text-purple-300/70">
@@ -566,7 +527,62 @@ export function AgentCCTV() {
                             {log.type}
                           </Badge>
                         </div>
-                        <p className="text-sm text-purple-300">{log.message}</p>
+                        <div className="space-y-2">
+                          {log.message.split("\n\n").map((paragraph, index) => {
+                            // Skip empty paragraphs
+                            if (!paragraph.trim()) return null;
+
+                            // Clean up the text
+                            const cleanText = paragraph
+                              .replace(/\[.*?\]/g, "")
+                              .replace(/\d+\./g, "")
+                              .replace(/\[CCTV SURVEILLANCE LOG\]/g, "")
+                              .replace(/\[END OF ENTRY\]/g, "")
+                              .replace(/\[END OF RECORDING\]/g, "")
+                              .replace(/\[CCTV SYSTEM SHUTDOWN\]/g, "")
+                              .replace(
+                                /\[WARNING: SYSTEM UPDATE IMMINENT\]/g,
+                                ""
+                              )
+                              .trim();
+
+                            if (!cleanText) return null;
+
+                            // Handle bullet points
+                            if (cleanText.includes("* ")) {
+                              return (
+                                <div key={index}>
+                                  <ul className="list-none space-y-1">
+                                    {cleanText
+                                      .split("* ")
+                                      .map((bullet, bulletIndex) => {
+                                        if (!bullet.trim()) return null;
+                                        return (
+                                          <li
+                                            key={bulletIndex}
+                                            className="flex items-center gap-2 text-sm text-purple-300/70"
+                                          >
+                                            <div className="w-1 h-1 rounded-full bg-purple-400"></div>
+                                            {bullet.trim()}
+                                          </li>
+                                        );
+                                      })}
+                                  </ul>
+                                </div>
+                              );
+                            }
+
+                            // Regular paragraphs
+                            return (
+                              <p
+                                key={index}
+                                className="text-sm text-purple-300/70"
+                              >
+                                {cleanText}
+                              </p>
+                            );
+                          })}
+                        </div>
                         <p className="text-xs text-purple-300/70">
                           {log.messageJp}
                         </p>

@@ -480,7 +480,7 @@ export function ChatRooms() {
               Downtown District Chat
             </h1>
             <p className="font-light tracking-widest text-purple-400/70">
-              ディノワールドチャット
+              ディワールドチャット
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -624,7 +624,9 @@ export function ChatRooms() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={
-                messageRateLimit.isLimited
+                !address
+                  ? "Connect wallet to chat..."
+                  : messageRateLimit.isLimited
                   ? "Message limit reached. Please wait..."
                   : "Share your thoughts..."
               }
@@ -634,15 +636,19 @@ export function ChatRooms() {
                   handleSend();
                 }
               }}
-              disabled={messageRateLimit.isLimited}
+              disabled={messageRateLimit.isLimited || !address}
             />
             <Button
               onClick={handleSend}
-              disabled={messageRateLimit.isLimited}
+              disabled={messageRateLimit.isLimited || !address}
               className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
-              Send
+              {!address
+                ? "Connect Wallet"
+                : messageRateLimit.isLimited
+                ? `Wait ${messageRateLimit.remaining}s`
+                : "Send"}
             </Button>
           </div>
         </div>
