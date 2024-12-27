@@ -117,7 +117,7 @@ export function DepartmentDonationModal({
 
       // Send backend notification
       await fetch(
-        `${process.env.BACKEND_API_URL}/api/departments/${departmentId}/budget/donate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/departments/${departmentId}/budget/donate`,
         {
           method: "POST",
           headers: {

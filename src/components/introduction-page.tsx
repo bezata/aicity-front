@@ -228,7 +228,6 @@ export function IntroductionPage() {
                   value={98}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   Neural network operating at 98% efficiency
@@ -258,7 +257,6 @@ export function IntroductionPage() {
                   value={85}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   85% of AI residents currently active
@@ -288,7 +286,6 @@ export function IntroductionPage() {
                   value={42}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   Current network load at 42%

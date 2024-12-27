@@ -199,7 +199,7 @@ export function AgentCCTV() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}api/agents`,
+          `${process.env.NEXT_PUBLIC_API_URL}api/agents`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -259,7 +259,7 @@ export function AgentCCTV() {
       const apiKey = process.env.BACKEND_API_KEY;
       // Fetch new observation if needed
       const response = await fetch(
-        `${process.env.BACKEND_API_URL}/api/cctv/observe/${agentId}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/cctv/observe/${agentId}`,
         {
           method: "POST",
           headers: {
@@ -315,7 +315,7 @@ export function AgentCCTV() {
         setIsConnected(true);
       } else {
         fetch(
-          `${process.env.BACKEND_API_URL}api/cctv/observe/${selectedAgent.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}api/cctv/observe/${selectedAgent.id}`,
           {
             headers: {
               "Content-Type": "application/json",

@@ -36,7 +36,7 @@ export function NotificationCenter() {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}/api/chronicles/incidents`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/chronicles/incidents`,
           {
             headers: {
               "x-api-key": process.env.BACKEND_API_KEY || "",

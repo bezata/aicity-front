@@ -125,19 +125,19 @@ export default function AICityChronicle() {
 
         // Fetch all data types in parallel
         const [newsRes, eventsRes, incidentsRes] = await Promise.all([
-          fetch(`${process.env.BACKEND_API_URL}api/chronicles/news`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/news`, {
             headers: {
               "Content-Type": "application/json",
               ...(apiKey && { "x-api-key": apiKey }),
             },
           }),
-          fetch(`${process.env.BACKEND_API_URL}api/chronicles/events`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/events`, {
             headers: {
               "Content-Type": "application/json",
               ...(apiKey && { "x-api-key": apiKey }),
             },
           }),
-          fetch(`${process.env.BACKEND_API_URL}api/chronicles/incidents`, {
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/incidents`, {
             headers: {
               "Content-Type": "application/json",
               ...(apiKey && { "x-api-key": apiKey }),

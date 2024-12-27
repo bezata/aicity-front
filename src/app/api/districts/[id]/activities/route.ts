@@ -10,7 +10,7 @@ export async function GET(
     const limit = searchParams.get("limit") || "10";
     const before = searchParams.get("before");
 
-    let url = `${process.env.BACKEND_API_URL}/api/districts/${params.id}/activities?limit=${limit} `;
+    let url = `${process.env.NEXT_PUBLIC_API_URL}/api/districts/${params.id}/activities?limit=${limit} `;
     if (before) {
       url += `&before=${before}`;
     }

@@ -137,7 +137,7 @@ export function DonationModal({
       await walletProvider.signAndSendTransaction(tx, sendOptions);
       const apiKey = process.env.BACKEND_API_KEY;
       // Send backend notification
-      await fetch(`${process.env.BACKEND_API_URL}api/donations/simple`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/donations/simple`, {
         headers: {
           "Content-Type": "application/json",
           ...(apiKey && { "x-api-key": apiKey }),

@@ -162,7 +162,7 @@ export function DepartmentsOverview() {
     const fetchActiveSessions = async () => {
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}api/collaborations`,
+          `${process.env.NEXT_PUBLIC_API_URL}api/collaborations`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -271,7 +271,7 @@ export function DepartmentsOverview() {
       setIsLoading(true);
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}api/departments`,
+          `${process.env.NEXT_PUBLIC_API_URL}api/departments`,
           {
             headers: {
               "Content-Type": "application/json",

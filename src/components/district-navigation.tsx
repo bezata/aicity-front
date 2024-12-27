@@ -53,7 +53,7 @@ export function DistrictNavigation() {
     async function fetchConversations() {
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}/api/conversations`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/conversations`,
           {
             headers: {
               "x-api-key": process.env.BACKEND_API_KEY || "",

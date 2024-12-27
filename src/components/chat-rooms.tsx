@@ -278,7 +278,7 @@ export function ChatRooms() {
     const fetchDonationGoals = async () => {
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}/api/donations/goals`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/donations/goals`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -302,7 +302,7 @@ export function ChatRooms() {
     async (conversationId: string) => {
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}/api/conversations/${conversationId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -371,7 +371,7 @@ export function ChatRooms() {
     const fetchConversations = async () => {
       try {
         const response = await fetch(
-          `${process.env.BACKEND_API_URL}api/conversations`,
+          `${process.env.NEXT_PUBLIC_API_URL}api/conversations`,
           {
             headers: {
               "Content-Type": "application/json",

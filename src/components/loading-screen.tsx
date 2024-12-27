@@ -153,7 +153,6 @@ export function LoadingScreen() {
                 value={progress}
                 className="h-2 bg-purple-500/10"
                 // @ts-ignore
-                indicatorClassName="bg-purple-500"
               />
             </div>
           </div>
@@ -211,12 +210,6 @@ export function LoadingScreen() {
                       check.status === "pending"
                         ? "bg-purple-500/5"
                         : "bg-purple-500/10"
-                    )}
-                    // @ts-ignore
-                    indicatorClassName={cn(
-                      check.status === "complete"
-                        ? "bg-green-500"
-                        : "bg-purple-500"
                     )}
                   />
                 </div>
