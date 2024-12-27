@@ -5,17 +5,19 @@ import { Separator } from "@/components/ui/separator";
 import { Brain, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
-import {
-  Connection,
-  clusterApiUrl,
-  PublicKey,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
 import { useAppKit } from "@reown/appkit/react";
+import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
+import { useState } from "react";
+import { useEffect } from "react";
+import {
+  useAppKitConnection,
+  type Provider,
+} from "@reown/appkit-adapter-solana/react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const navItems = [
-  { name: "Overview", href: "/" },
+  { name: "Introduction", href: "/" },
+  { name: "Overview", href: "/overview" },
   { name: "Departments", href: "/departments" },
   { name: "Chronicles", href: "/chronicles" },
   { name: "CCTV", href: "/surveillance" },
@@ -24,50 +26,34 @@ const navItems = [
 export function TopNav() {
   const { open } = useAppKit();
   const pathname = usePathname();
+  const { address } = useAppKitAccount();
+  const { connection } = useAppKitConnection();
+  const { walletProvider } = useAppKitProvider<Provider>("solana");
   const [balance, setBalance] = useState(0);
-  const [isConnected, setIsConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | undefined>(
-    undefined
-  );
+  const [isWalletReady, setIsWalletReady] = useState(false);
 
   useEffect(() => {
-    const { solana } = window as any;
-    if (solana) {
-      solana.on("connect", () => {
-        setIsConnected(true);
-        setWalletAddress(solana.publicKey?.toString());
-
-        // Get balance
-        const connection = new Connection(clusterApiUrl("devnet"));
-        connection
-          .getBalance(solana.publicKey)
-          .then((bal) => setBalance(bal / LAMPORTS_PER_SOL))
-          .catch((err) => {
-            console.error("Error getting balance:", err);
-            setBalance(0);
-          });
-      });
-
-      solana.on("disconnect", () => {
-        setIsConnected(false);
-        setWalletAddress(undefined);
-        setBalance(0);
-      });
-
-      // Check if already connected
-      if (solana.isConnected) {
-        setIsConnected(true);
-        setWalletAddress(solana.publicKey?.toString());
-      }
-    }
-
-    return () => {
-      if (solana) {
-        solana.removeAllListeners("connect");
-        solana.removeAllListeners("disconnect");
+    const checkWalletState = async () => {
+      if (walletProvider?.publicKey && connection) {
+        try {
+          const bal = await connection.getBalance(walletProvider.publicKey);
+          setBalance(bal / LAMPORTS_PER_SOL);
+          setIsWalletReady(true);
+        } catch (err) {
+          console.error("Error getting balance:", err);
+          setBalance(0);
+          setIsWalletReady(false);
+        }
+      } else {
+        setIsWalletReady(false);
       }
     };
-  }, []);
+
+    checkWalletState();
+    const interval = setInterval(checkWalletState, 30000);
+
+    return () => clearInterval(interval);
+  }, [connection, walletProvider?.publicKey]);
 
   const handleConnect = () => {
     open();
@@ -98,50 +84,44 @@ export function TopNav() {
       <div className="flex flex-1 items-center justify-between px-4">
         {/* Navigation Links */}
         <nav className="flex items-center gap-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`
-                  group relative px-4 py-2 transition-all duration-300
-                  ${
-                    isActive
-                      ? "text-purple-300"
-                      : "text-purple-300/70 hover:text-purple-300"
-                  }
-                `}
-              >
-                {/* Active Indicator */}
-                {isActive && (
-                  <div className="absolute inset-0 -z-10">
-                    <div className="absolute inset-x-0 -bottom-[1px] h-[1px] bg-purple-500/50 shadow-[0_0_15px_0_rgba(168,85,247,0.4)]" />
-                    <div className="absolute inset-0 bg-purple-500/5" />
-                  </div>
-                )}
-
-                {/* Hover Effects */}
-                <div className="relative">
-                  <span className="relative z-10 text-sm font-light tracking-wide">
-                    {item.name}
-                  </span>
-                  <div className="absolute -inset-x-2 -inset-y-1 -z-10 scale-90 rounded-lg bg-purple-500/0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:bg-purple-500/5 group-hover:opacity-100" />
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`
+                group relative px-4 py-2 transition-all duration-300
+                ${
+                  pathname === item.href
+                    ? "text-purple-300"
+                    : "text-purple-300/70 hover:text-purple-300"
+                }
+              `}
+            >
+              {pathname === item.href && (
+                <div className="absolute inset-0 -z-10">
+                  <div className="absolute inset-x-0 -bottom-[1px] h-[1px] bg-purple-500/50 shadow-[0_0_15px_0_rgba(168,85,247,0.4)]" />
+                  <div className="absolute inset-0 bg-purple-500/5" />
                 </div>
-              </Link>
-            );
-          })}
+              )}
+              <div className="relative">
+                <span className="relative z-10 text-sm font-light tracking-wide">
+                  {item.name}
+                </span>
+                <div className="absolute -inset-x-2 -inset-y-1 -z-10 scale-90 rounded-lg bg-purple-500/0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:bg-purple-500/5 group-hover:opacity-100" />
+              </div>
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-4">
           {/* Credits & Wallet Section */}
           <div className="hidden items-center gap-4 lg:flex">
-            {isConnected && walletAddress && (
+            {address && (
               <>
                 <div className="flex items-center gap-2">
                   <div className="text-sm">
                     <div className="font-mono text-purple-300">
-                      <span className="text-purple-400/70 ">$AIC:</span>{" "}
+                      <span className="text-purple-400/70">$NEUROVA:</span>{" "}
                       {balance.toLocaleString()}
                     </div>
                     {balance === 0 && (
@@ -151,9 +131,7 @@ export function TopNav() {
                           size="sm"
                           className="relative -ml-2 h-7 gap-2 border border-purple-500/10 bg-purple-500/5 px-2 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300"
                         >
-                          <span className="relative">
-                            <span className="relative">+</span>
-                          </span>
+                          <span className="relative">+</span>
                           Buy Credits
                         </Button>
                       </Link>
@@ -166,7 +144,7 @@ export function TopNav() {
           </div>
 
           {/* Connect Wallet Button */}
-          {!isConnected ? (
+          {!address ? (
             <Button
               variant="ghost"
               className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"

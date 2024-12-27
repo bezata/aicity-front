@@ -1,10 +1,10 @@
-import { MainDashboard } from "@/components/main-dashboard";
+import { IntroductionPage } from "@/components/introduction-page";
 import { MainLayout } from "@/components/main-layout";
 
 export default function Home() {
   return (
     <MainLayout>
-      <MainDashboard />
+      <IntroductionPage />
     </MainLayout>
   );
 }

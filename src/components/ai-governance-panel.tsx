@@ -197,8 +197,8 @@ export function CityEventsPanel() {
                         className="h-2 bg-purple-500/10"
                       />
                       <div className="flex items-center justify-between text-xs text-purple-300/50">
-                        <span>{event.currentAmount.toLocaleString()} CR</span>
-                        <span>{event.targetAmount.toLocaleString()} CR</span>
+                        <span>{event.currentAmount.toLocaleString()} NRA</span>
+                        <span>{event.targetAmount.toLocaleString()} NRA</span>
                       </div>
                     </div>
 

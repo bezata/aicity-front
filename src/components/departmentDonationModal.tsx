@@ -25,48 +25,27 @@ import {
   type Provider,
 } from "@reown/appkit-adapter-solana/react";
 
-interface DonationModalProps {
+interface DepartmentDonationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  projectTitle: string;
-  projectId: string;
+  departmentId: string;
+  departmentName: string;
   onDonationComplete?: () => void;
-  project: {
-    id: string;
-    departmentId: string;
-    targetAmount: number;
-    currentAmount: number;
-    title: string;
-    description: string;
-    celebrationEvent: {
-      title: string;
-      description: string;
-      duration: number;
-      category: string;
-      impact: {
-        social: number;
-        economic: number;
-        cultural: number;
-        environmental: number;
-      };
-    };
-  };
 }
 
 type DonationState = "input" | "processing" | "success" | "error";
 
 const PROGRAM_ID = new PublicKey(
-  "FW3YLzmZnyVQXgf7dWPCK1AnkENxCnk65yh2nihKoyYV"
+  "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
 );
 
-export function DonationModal({
+export function DepartmentDonationModal({
   isOpen,
   onClose,
-  projectTitle,
-  projectId,
+  departmentId,
+  departmentName,
   onDonationComplete,
-  project,
-}: DonationModalProps) {
+}: DepartmentDonationModalProps) {
   const [amount, setAmount] = useState("");
   const [donationState, setDonationState] = useState<DonationState>("input");
   const [progress, setProgress] = useState(0);
@@ -96,7 +75,7 @@ export function DonationModal({
       setProgress(40);
 
       const userPubkey = new PublicKey(address);
-      const projectPubkey = new PublicKey(projectId);
+      const departmentPubkey = new PublicKey(departmentId);
 
       const donateIx = new TransactionInstruction({
         programId: PROGRAM_ID,
@@ -107,7 +86,7 @@ export function DonationModal({
             isWritable: true,
           },
           {
-            pubkey: projectPubkey,
+            pubkey: departmentPubkey,
             isSigner: false,
             isWritable: true,
           },
@@ -134,37 +113,24 @@ export function DonationModal({
         skipPreflight: false,
       };
 
-      await walletProvider.signAndSendTransaction(tx, sendOptions);
+      const signature = await walletProvider.signAndSendTransaction(
+        tx,
+        sendOptions
+      );
 
       // Send backend notification
-      await fetch("http://localhost:3001/api/donations/simple", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: address,
-          userName: "Reown Donor",
-          amount: Number(amount),
-          districtId: "central-district",
-          departmentId: project.departmentId,
-          purpose: project.title,
-          category: project.celebrationEvent.category,
-          subcategory: {
-            [project.celebrationEvent.category]: {
-              tradition:
-                project.departmentId === "culture" ? "Local Arts" : undefined,
-              festival: project.celebrationEvent.title,
-              program: project.title,
-              community: `${
-                project.departmentId.charAt(0).toUpperCase() +
-                project.departmentId.slice(1)
-              } Community`,
-              impact: Object.entries(project.celebrationEvent.impact).sort(
-                ([, a], [, b]) => b - a
-              )[0][0],
-            },
-          },
-        }),
-      });
+      await fetch(
+        `http://localhost:3001/api/departments/${departmentId}/budget/donate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: Number(amount),
+            donorId: address,
+            transactionHash: signature || undefined,
+          }),
+        }
+      );
 
       setProgress(100);
       setDonationState("success");
@@ -191,7 +157,7 @@ export function DonationModal({
       <DialogContent className="border-purple-500/10 bg-black/90 text-purple-50 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-light tracking-wider">
-            Support Project
+            Support {departmentName}
           </DialogTitle>
         </DialogHeader>
 
@@ -199,15 +165,15 @@ export function DonationModal({
           {donationState === "input" && (
             <div className="space-y-4">
               <p className="text-sm text-purple-300/70">
-                Enter the amount of tokens you would like to donate to support{" "}
-                <span className="text-purple-300">{projectTitle}</span>
+                Enter the amount of $NRA you would like to donate to support the{" "}
+                <span className="text-purple-300">{departmentName}</span>
               </p>
 
               <div className="relative">
                 <Coins className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
                 <Input
                   type="number"
-                  placeholder="Amount in tokens"
+                  placeholder="Amount in $NRA"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="border-purple-500/10 bg-black/20 pl-9 text-purple-300 placeholder:text-purple-300/50"
@@ -227,7 +193,7 @@ export function DonationModal({
                         "border-purple-500 bg-purple-500/20"
                     )}
                   >
-                    {preset} tokens
+                    {preset} $NRA
                   </Button>
                 ))}
               </div>
@@ -290,7 +256,7 @@ export function DonationModal({
                   Donation Successful!
                 </p>
                 <p className="text-sm text-purple-300/70">
-                  Thank you for supporting this project
+                  Thank you for supporting the {departmentName} Department
                 </p>
               </div>
             </div>

@@ -14,9 +14,9 @@ const solanaWeb3JsAdapter = new SolanaAdapter({
 });
 const projectId = "0cdaef95ad82b31ab7175ac7423dd464";
 const metadata = {
-  name: "AppKit",
-  description: "AppKit Solana Example",
-  url: "https://example.com", // origin must match your domain & subdomain
+  name: "Neurova",
+  description: "Neurova",
+  url: "https://neurova.com", // origin must match your domain & subdomain
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 

@@ -13,7 +13,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Users, Activity, DollarSign } from "lucide-react";
 import { DepartmentSessions } from "./department-sessions";
-import React from "react";
+import { DepartmentDonationModal } from "./departmentDonationModal";
+import React, { useState } from "react";
 
 interface DepartmentPageProps {
   department: {
@@ -45,7 +46,7 @@ interface DepartmentPageProps {
 
 export function DepartmentPage({ department }: DepartmentPageProps) {
   const router = useRouter();
-
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   return (
     <div className="container mx-auto py-6">
       <Button
@@ -177,20 +178,20 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                   />
                   <div className="flex items-center justify-between text-sm text-purple-300/50">
                     <span>
-                      {department.budget.allocated.toLocaleString()} CR
+                      {department.budget.allocated.toLocaleString()} NRA
                       allocated
                     </span>
                     <span>
-                      {department.budget.total.toLocaleString()} CR total
+                      {department.budget.total.toLocaleString()} NRA total
                     </span>
                   </div>
                 </div>
 
                 <Button
                   className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                  onClick={() =>
-                    router.push(`/departments/${department.id}/donate`)
-                  }
+                  onClick={() => {
+                    setIsDonationModalOpen(true);
+                  }}
                 >
                   <DollarSign className="h-4 w-4" />
                   Support Department
@@ -200,7 +201,14 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
           </Card>
         </div>
       </div>
-
+      {isDonationModalOpen && (
+        <DepartmentDonationModal
+          isOpen={isDonationModalOpen}
+          onClose={() => setIsDonationModalOpen(false)}
+          departmentId={department.id}
+          departmentName={department.name}
+        />
+      )}
       <div className="mt-6">
         <DepartmentSessions />
       </div>

@@ -99,6 +99,9 @@ interface ApiResponse<T> {
   data: T[];
 }
 
+const CACHE_KEY = "city_chronicle_data";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 export default function AICityChronicle() {
   const [selectedStory, setSelectedStory] = useState<string | null>(null);
   const [lightningPosition, setLightningPosition] = useState({ x: 50, y: 50 });
@@ -111,44 +114,122 @@ export default function AICityChronicle() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch data from APIs
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
+
+      // Check cache first
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        try {
+          const { data, timestamp } = JSON.parse(cached);
+          const now = Date.now();
+          if (now - timestamp < CACHE_DURATION) {
+            setNews(data.news);
+            setEvents(data.events);
+            setIncidents(data.incidents);
+            setBudgets(data.budgets);
+            setIsLoading(false);
+            return;
+          }
+        } catch (e) {
+          console.error("Cache parsing error:", e);
+          localStorage.removeItem(CACHE_KEY);
+        }
+      }
+
+      // Fetch fresh data if no cache or cache expired
       try {
         const [newsRes, eventsRes, incidentsRes, budgetsRes] =
           await Promise.all([
-            fetch("http://localhost:3001/api/chronicles/news", {
-              cache: "force-cache",
-              next: { revalidate: 60 * 60 * 3 }, // Revalidate every 3 hours
-            }),
-            fetch("http://localhost:3001/api/chronicles/events", {
-              cache: "force-cache",
-              next: { revalidate: 60 * 60 * 3 },
-            }),
-            fetch("http://localhost:3001/api/chronicles/incidents", {
-              cache: "force-cache",
-              next: { revalidate: 60 * 60 * 3 },
-            }),
-            fetch("http://localhost:3001/api/chronicles/budgets", {
-              cache: "force-cache",
-              next: { revalidate: 60 * 60 * 3 },
-            }),
+            fetch("http://localhost:3001/api/chronicles/news"),
+            fetch("http://localhost:3001/api/chronicles/events"),
+            fetch("http://localhost:3001/api/chronicles/incidents"),
+            fetch("http://localhost:3001/api/chronicles/budgets"),
           ]);
 
-        const newsData: ApiResponse<NewsItem> = await newsRes.json();
-        const eventsData: ApiResponse<Event> = await eventsRes.json();
-        const incidentsData: ApiResponse<Incident> = await incidentsRes.json();
-        const budgetsData: ApiResponse<Budget> = await budgetsRes.json();
+        if (
+          !newsRes.ok ||
+          !eventsRes.ok ||
+          !incidentsRes.ok ||
+          !budgetsRes.ok
+        ) {
+          throw new Error("One or more API requests failed");
+        }
 
-        setNews(newsData.data);
-        setEvents(eventsData.data);
-        setIncidents(incidentsData.data);
-        setBudgets(budgetsData.data);
-        setIsLoading(false);
+        const [newsData, eventsData, incidentsData, budgetsData] =
+          await Promise.all([
+            newsRes.json(),
+            eventsRes.json(),
+            incidentsRes.json(),
+            budgetsRes.json(),
+          ]);
+
+        // Validate response structure
+        if (
+          !newsData.success ||
+          !eventsData.success ||
+          !incidentsData.success ||
+          !budgetsData.success
+        ) {
+          throw new Error("Invalid API response format");
+        }
+
+        // Type check and filter out invalid entries
+        const validNews = newsData.data.filter(
+          (item: any): item is NewsItem =>
+            item &&
+            typeof item.headline === "string" &&
+            typeof item.content === "string"
+        );
+        const validEvents = eventsData.data.filter(
+          (item: any): item is Event =>
+            item &&
+            typeof item.title === "string" &&
+            typeof item.description === "string"
+        );
+        const validIncidents = incidentsData.data.filter(
+          (item: any): item is Incident =>
+            item &&
+            typeof item.description === "string" &&
+            typeof item.incidentType === "string"
+        );
+        const validBudgets = budgetsData.data.filter(
+          (item: any): item is Budget =>
+            item &&
+            typeof item.department === "string" &&
+            typeof item.currentBudget === "number"
+        );
+
+        // Update state with validated data
+        setNews(validNews);
+        setEvents(validEvents);
+        setIncidents(validIncidents);
+        setBudgets(validBudgets);
+
+        // Cache the validated data
+        localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            timestamp: Date.now(),
+            data: {
+              news: validNews,
+              events: validEvents,
+              incidents: validIncidents,
+              budgets: validBudgets,
+            },
+          })
+        );
       } catch (error) {
         console.error("Error fetching data:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch data"
+        );
+      } finally {
         setIsLoading(false);
       }
     };

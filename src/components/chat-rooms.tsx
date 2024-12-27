@@ -40,6 +40,8 @@ import {
 import { cn } from "@/lib/utils";
 import { DistrictNavigation } from "./district-navigation";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useAppKitAccount } from "@reown/appkit/react";
+import { rateLimiter } from "@/lib/rateLimiter";
 
 interface Message {
   id: string;
@@ -135,6 +137,7 @@ interface ConversationResponse {
 }
 
 export function ChatRooms() {
+  const { address } = useAppKitAccount();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [donationProjects, setDonationProjects] = useState<DonationGoal[]>([]);
@@ -171,10 +174,45 @@ export function ChatRooms() {
   const [selectedProject, setSelectedProject] = useState<DonationGoal | null>(
     null
   );
+  const [messageRateLimit, setMessageRateLimit] = useState<{
+    remaining: number;
+    resetAt: Date | null;
+    isLimited: boolean;
+  }>({
+    remaining: 15,
+    resetAt: null,
+    isLimited: false,
+  });
+
+  // Check rate limit status
+  useEffect(() => {
+    if (!address) return;
+
+    // Initial check
+    setMessageRateLimit(rateLimiter.checkLimit(address));
+
+    // Update every minute
+    const interval = setInterval(() => {
+      setMessageRateLimit(rateLimiter.checkLimit(address));
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [address]);
+
+  const formatTimeUntilReset = (resetAt: Date) => {
+    const now = new Date();
+    const diff = resetAt.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
 
   const handleWebSocketMessage = useCallback((wsMessage: WSMessage | any) => {
     if (wsMessage.type === "agent_conversation") {
       const { message, location, activity, topic } = wsMessage.data;
+
+      // Skip emergency-related messages
+      if (activity === "emergency") return;
 
       // Only process if it's an AI message (has agentName and agentRole)
       if (message.agentName && message.agentRole) {
@@ -200,8 +238,11 @@ export function ChatRooms() {
       }
       // Completely ignore user messages from WebSocket
     }
-    // Handle system messages
-    else if (wsMessage.type === "system_message") {
+    // Handle system messages except emergency ones
+    else if (
+      wsMessage.type === "system_message" &&
+      wsMessage.data.activity !== "emergency"
+    ) {
       setMessages((prevMessages) => {
         if (
           prevMessages.some((msg) => msg.id === wsMessage.timestamp.toString())
@@ -348,10 +389,20 @@ export function ChatRooms() {
   }, [connected, sendMessage, fetchConversationHistory]);
 
   const handleSend = useCallback(() => {
-    if (!input.trim() || !connected) return;
+    if (!input.trim() || !connected || !address) return;
+
+    // Check rate limit before sending
+    const limit = rateLimiter.checkLimit(address);
+    if (limit.isLimited) return;
 
     const timestamp = new Date().toISOString();
     const messageId = Date.now().toString();
+
+    // Record the message in rate limiter
+    rateLimiter.recordMessage(address, input.trim());
+
+    // Update local rate limit state
+    setMessageRateLimit(rateLimiter.checkLimit(address));
 
     // Immediately add message to UI
     const newMessage: Message = {
@@ -363,7 +414,6 @@ export function ChatRooms() {
       },
       content: input.trim(),
       timestamp,
-      // Use the last message's context if available
       location: messages[messages.length - 1]?.location,
       activity: messages[messages.length - 1]?.activity,
       topic: messages[messages.length - 1]?.topic,
@@ -381,7 +431,7 @@ export function ChatRooms() {
     // Clear input and scroll
     setInput("");
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [input, currentConversation, connected, sendMessage, messages]);
+  }, [input, currentConversation, connected, address, messages, sendMessage]);
 
   const getEventTypeIcon = (departmentId: string) => {
     switch (departmentId) {
@@ -458,6 +508,23 @@ export function ChatRooms() {
                 className="border-yellow-400/30 bg-yellow-500/10 text-yellow-300"
               >
                 Quality: {connectionQuality}%
+              </Badge>
+            )}
+            {messageRateLimit.remaining <= 5 && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "border-purple-400/30 bg-purple-500/10",
+                  messageRateLimit.isLimited
+                    ? "text-red-300"
+                    : "text-yellow-300"
+                )}
+              >
+                {messageRateLimit.isLimited
+                  ? `Reset in ${formatTimeUntilReset(
+                      messageRateLimit.resetAt!
+                    )}`
+                  : `${messageRateLimit.remaining} msgs left`}
               </Badge>
             )}
             <Badge
@@ -556,17 +623,23 @@ export function ChatRooms() {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Share your thoughts..."
+              placeholder={
+                messageRateLimit.isLimited
+                  ? "Message limit reached. Please wait..."
+                  : "Share your thoughts..."
+              }
               className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   handleSend();
                 }
               }}
+              disabled={messageRateLimit.isLimited}
             />
             <Button
               onClick={handleSend}
-              className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+              disabled={messageRateLimit.isLimited}
+              className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
             >
               <Send className="h-4 w-4" />
               Send
@@ -637,8 +710,10 @@ export function ChatRooms() {
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-purple-300/50">
-                        <span>{project.currentAmount.toLocaleString()} CR</span>
-                        <span>{project.targetAmount.toLocaleString()} CR</span>
+                        <span>
+                          {project.currentAmount.toLocaleString()} NRA
+                        </span>
+                        <span>{project.targetAmount.toLocaleString()} NRA</span>
                       </div>
                     </div>
 

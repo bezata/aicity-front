@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -33,6 +33,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { rateLimiter } from "@/lib/rateLimiter";
+import { cn } from "@/lib/utils";
+import { useAppKitAccount } from "@reown/appkit/react";
 
 interface Participant {
   id: string;
@@ -115,8 +119,22 @@ interface CollaborationHistory {
   };
 }
 
+interface EmergencyMessage {
+  type: "system_message";
+  timestamp: number;
+  data: {
+    content: string;
+    activity: string;
+    agents: {
+      id: string;
+      name: string;
+    }[];
+  };
+}
+
 export function DepartmentSessions() {
   const params = useParams();
+  const { address } = useAppKitAccount();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [collaborationHistory, setCollaborationHistory] = useState<
     CollaborationHistory[]
@@ -124,6 +142,15 @@ export function DepartmentSessions() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [messageRateLimit, setMessageRateLimit] = useState<{
+    remaining: number;
+    resetAt: Date | null;
+    isLimited: boolean;
+  }>({
+    remaining: 15,
+    resetAt: null,
+    isLimited: false,
+  });
   const [currentUser] = useState<Participant>({
     id: "user1",
     name: "Human Observer",
@@ -131,6 +158,123 @@ export function DepartmentSessions() {
     role: "Session Participant",
     avatar: "/placeholder.svg?height=32&width=32",
   });
+
+  const formatTimeUntilReset = (resetAt: Date) => {
+    const now = new Date();
+    const diff = resetAt.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${minutes}m`;
+  };
+
+  const handleWebSocketMessage = useCallback(
+    (wsMessage: any) => {
+      if (
+        wsMessage.type === "system_message" &&
+        wsMessage.data.activity === "emergency"
+      ) {
+        // Create a new live session from emergency message
+        const emergencySession: Session = {
+          sessionId: `emergency-${wsMessage.timestamp}`,
+          topic: wsMessage.data.content,
+          participants: wsMessage.data.agents.map((agent: any) => agent.id),
+          scheduledTime: wsMessage.timestamp,
+          category: "development",
+          status: "live",
+          messages: [],
+        };
+
+        setSessions((prevSessions) => {
+          // Check if this emergency session already exists
+          if (
+            prevSessions.some((s) => s.sessionId === emergencySession.sessionId)
+          ) {
+            return prevSessions;
+          }
+          return [emergencySession, ...prevSessions];
+        });
+      } else if (wsMessage.type === "agent_conversation") {
+        const { message, conversationId, activity } = wsMessage.data;
+
+        // Only process emergency-related messages or messages for active sessions
+        if (
+          activity === "emergency" ||
+          (activeSession && activeSession.sessionId === conversationId)
+        ) {
+          const newMessage: Message = {
+            id: `msg-${message.timestamp}`,
+            senderId: message.agentName,
+            content: message.content,
+            timestamp: new Date(message.timestamp).toISOString(),
+          };
+
+          setSessions((prevSessions) =>
+            prevSessions.map((session) => {
+              if (
+                session.sessionId === conversationId ||
+                (activity === "emergency" &&
+                  session.sessionId === `emergency-${wsMessage.timestamp}`)
+              ) {
+                return {
+                  ...session,
+                  messages: [...session.messages, newMessage],
+                };
+              }
+              return session;
+            })
+          );
+
+          // Update active session if it's the current one
+          setActiveSession((prev) => {
+            if (
+              prev &&
+              (prev.sessionId === conversationId ||
+                (activity === "emergency" &&
+                  prev.sessionId === `emergency-${wsMessage.timestamp}`))
+            ) {
+              return {
+                ...prev,
+                messages: [...prev.messages, newMessage],
+              };
+            }
+            return prev;
+          });
+        }
+      }
+    },
+    [activeSession]
+  );
+
+  const { connected, connectionState, sendMessage } = useWebSocket(
+    "ws://localhost:3001/ws",
+    {
+      onMessage: handleWebSocketMessage,
+    }
+  );
+
+  // Check rate limit status
+  useEffect(() => {
+    if (!address) return;
+
+    // Initial check
+    setMessageRateLimit(rateLimiter.checkLimit(address));
+
+    // Update every minute
+    const interval = setInterval(() => {
+      setMessageRateLimit(rateLimiter.checkLimit(address));
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [address]);
+
+  useEffect(() => {
+    if (connected && activeSession) {
+      sendMessage({
+        type: "join_session",
+        sessionId: activeSession.sessionId,
+      });
+    }
+  }, [connected, activeSession, sendMessage]);
 
   useEffect(() => {
     async function fetchData() {
@@ -228,31 +372,54 @@ export function DepartmentSessions() {
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeSession) return;
+    if (!newMessage.trim() || !activeSession || !connected || !address) return;
+
+    // Check rate limit before sending
+    const limit = rateLimiter.checkLimit(address);
+    if (limit.isLimited) return;
 
     const message: Message = {
       id: `m${Date.now()}`,
       senderId: currentUser.id,
       content: newMessage,
-      timestamp: "Just now",
+      timestamp: new Date().toISOString(),
     };
 
-    const updatedSessions = sessions.map((session) => {
-      if (session.sessionId === activeSession.sessionId) {
+    // Record the message in rate limiter
+    rateLimiter.recordMessage(address, newMessage.trim());
+
+    // Update local rate limit state
+    setMessageRateLimit(rateLimiter.checkLimit(address));
+
+    // Update local state
+    setSessions((prevSessions) =>
+      prevSessions.map((session) => {
+        if (session.sessionId === activeSession.sessionId) {
+          return {
+            ...session,
+            messages: [...session.messages, message],
+          };
+        }
+        return session;
+      })
+    );
+
+    setActiveSession((prev) => {
+      if (prev) {
         return {
-          ...session,
-          messages: [...session.messages, message],
+          ...prev,
+          messages: [...prev.messages, message],
         };
       }
-      return session;
+      return prev;
     });
 
-    const updatedActiveSession = updatedSessions.find(
-      (s) => s.sessionId === activeSession.sessionId
-    );
-    if (updatedActiveSession) {
-      setActiveSession(updatedActiveSession);
-    }
+    // Send via WebSocket
+    sendMessage({
+      type: "user_message",
+      sessionId: activeSession.sessionId,
+      content: newMessage.trim(),
+    });
 
     setNewMessage("");
   };
@@ -264,6 +431,14 @@ export function DepartmentSessions() {
       ...session,
       participants: [...session.participants, currentUser.id],
     };
+
+    // Send join session message via WebSocket
+    if (connected) {
+      sendMessage({
+        type: "join_session",
+        sessionId: session.sessionId,
+      });
+    }
 
     setActiveSession(updatedSession);
   };
@@ -287,6 +462,23 @@ export function DepartmentSessions() {
                 {sessions.filter((s) => s.status === "live").length} Live
                 Sessions
               </Badge>
+              {messageRateLimit.remaining <= 5 && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "border-purple-400/30 bg-purple-500/10",
+                    messageRateLimit.isLimited
+                      ? "text-red-300"
+                      : "text-yellow-300"
+                  )}
+                >
+                  {messageRateLimit.isLimited
+                    ? `Reset in ${formatTimeUntilReset(
+                        messageRateLimit.resetAt!
+                      )}`
+                    : `${messageRateLimit.remaining} msgs left`}
+                </Badge>
+              )}
               <Badge
                 variant="outline"
                 className="border-purple-400/30 bg-purple-500/10 text-purple-300"
@@ -298,18 +490,58 @@ export function DepartmentSessions() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="active" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 bg-black/20">
+            <TabsList className="grid w-full grid-cols-2 bg-black/20">
               <TabsTrigger value="active">Active</TabsTrigger>
               <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-              <TabsTrigger value="completed">History</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="completed">
-              <ScrollArea className="h-[600px] pr-4">
-                <div className="space-y-4">
-                  {collaborationHistory.map((collab) => (
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-4">
+                {sessions.length === 0 ? (
+                  <div className="flex h-[400px] flex-col items-center justify-center space-y-4 rounded-lg border border-purple-500/10 bg-black/20 p-8 text-center">
+                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-4">
+                      <Brain className="h-8 w-8 text-purple-400" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium text-purple-300">
+                        No Active Sessions
+                      </h3>
+                      <p className="text-sm text-purple-300/70">
+                        Waiting for emergency collaborations or scheduled
+                        sessions
+                      </p>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 rounded-lg border border-purple-500/10 bg-purple-500/5 px-4 py-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
+                        <Activity className="h-4 w-4 text-purple-400 animate-pulse" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-purple-300">
+                          System Active
+                        </p>
+                        <p className="text-xs text-purple-300/70">
+                          Monitoring for emergency situations
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border border-purple-500/10 bg-purple-500/5 px-4 py-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10">
+                        <Users className="h-4 w-4 text-purple-400" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-medium text-purple-300">
+                          AI Agents Ready
+                        </p>
+                        <p className="text-xs text-purple-300/70">
+                          Prepared to respond to emergencies
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  sessions.map((session) => (
                     <Card
-                      key={collab.sessionId}
+                      key={session.sessionId}
                       className="border-purple-500/10 bg-black/40"
                     >
                       <CardContent className="p-4">
@@ -317,19 +549,25 @@ export function DepartmentSessions() {
                           <div className="flex items-start justify-between">
                             <div className="flex items-start gap-3">
                               <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                                <History className="h-4 w-4 text-purple-400" />
+                                {React.createElement(
+                                  getSessionTypeIcon(session.category),
+                                  {
+                                    className: "h-4 w-4 text-purple-400",
+                                  }
+                                )}
                               </div>
                               <div>
                                 <h3 className="font-medium text-purple-300">
-                                  {collab.topic}
+                                  {session.topic.charAt(0).toUpperCase() +
+                                    session.topic.slice(1)}
                                 </h3>
                               </div>
                             </div>
                             <Badge
                               variant="outline"
-                              className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                              className={getStatusColor(session.status)}
                             >
-                              Completed
+                              {session.status}
                             </Badge>
                           </div>
 
@@ -338,160 +576,51 @@ export function DepartmentSessions() {
                               <Clock className="h-4 w-4" />
                               <span>
                                 {new Date(
-                                  parseInt(collab.timestamp)
+                                  session.scheduledTime
                                 ).toLocaleString()}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm text-purple-300/70">
                               <Users className="h-4 w-4" />
                               <span>
-                                {collab.participants.length} Participants
+                                {session.participants.length} Participants
                               </span>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="space-y-1">
-                              <p className="text-xs text-purple-300/70">
-                                Consensus
-                              </p>
-                              <Progress
-                                value={collab.metrics.consensusLevel * 100}
-                                className="h-1"
-                              />
-                              <p className="text-xs text-right text-purple-300">
-                                {Math.round(
-                                  collab.metrics.consensusLevel * 100
-                                )}
-                                %
-                              </p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-xs text-purple-300/70">
-                                Participation
-                              </p>
-                              <Progress
-                                value={collab.metrics.participation * 100}
-                                className="h-1"
-                              />
-                              <p className="text-xs text-right text-purple-300">
-                                {Math.round(collab.metrics.participation * 100)}
-                                %
-                              </p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-xs text-purple-300/70">
-                                Effectiveness
-                              </p>
-                              <Progress
-                                value={collab.metrics.effectiveness * 100}
-                                className="h-1"
-                              />
-                              <p className="text-xs text-right text-purple-300">
-                                {Math.round(collab.metrics.effectiveness * 100)}
-                                %
-                              </p>
-                            </div>
-                          </div>
+                          {session.status === "completed" &&
+                            session.messages.length > 0 && (
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-purple-300">
+                                  Session Messages:
+                                </h4>
+                                <div className="max-h-[200px] overflow-y-auto space-y-2">
+                                  {session.messages.map((msg) => (
+                                    <div
+                                      key={msg.id}
+                                      className="rounded-md border border-purple-500/10 bg-purple-500/5 p-2"
+                                    >
+                                      <div className="flex justify-between text-xs text-purple-300/70 mb-1">
+                                        <span>{msg.senderId}</span>
+                                        <span>
+                                          {new Date(
+                                            msg.timestamp
+                                          ).toLocaleTimeString()}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-purple-300">
+                                        {msg.content}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-4">
-                {sessions.map((session) => (
-                  <Card
-                    key={session.sessionId}
-                    className="border-purple-500/10 bg-black/40"
-                  >
-                    <CardContent className="p-4">
-                      <div className="space-y-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                              {React.createElement(
-                                getSessionTypeIcon(session.category),
-                                {
-                                  className: "h-4 w-4 text-purple-400",
-                                }
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="font-medium text-purple-300">
-                                {session.topic.charAt(0).toUpperCase() +
-                                  session.topic.slice(1)}
-                              </h3>
-                            </div>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={getStatusColor(session.status)}
-                          >
-                            {session.status}
-                          </Badge>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-4">
-                          <div className="flex items-center gap-2 text-sm text-purple-300/70">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {new Date(session.scheduledTime).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-purple-300/70">
-                            <Users className="h-4 w-4" />
-                            <span>
-                              {session.participants.length} Participants
-                            </span>
-                          </div>
-                        </div>
-
-                        {session.status === "completed" &&
-                          session.messages.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-purple-300">
-                                Session Messages:
-                              </h4>
-                              <div className="max-h-[200px] overflow-y-auto space-y-2">
-                                {session.messages.map((msg) => (
-                                  <div
-                                    key={msg.id}
-                                    className="rounded-md border border-purple-500/10 bg-purple-500/5 p-2"
-                                  >
-                                    <div className="flex justify-between text-xs text-purple-300/70 mb-1">
-                                      <span>{msg.senderId}</span>
-                                      <span>
-                                        {new Date(
-                                          msg.timestamp
-                                        ).toLocaleTimeString()}
-                                      </span>
-                                    </div>
-                                    <p className="text-sm text-purple-300">
-                                      {msg.content}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                        {session.status !== "completed" && (
-                          <Button
-                            className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                            onClick={() => setActiveSession(session)}
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            Enter Session
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                  ))
+                )}
               </div>
             </ScrollArea>
           </Tabs>
@@ -553,6 +682,28 @@ export function DepartmentSessions() {
                   ))}
               </div>
             </ScrollArea>
+
+            <form onSubmit={handleSendMessage} className="flex gap-2">
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder={
+                  messageRateLimit.isLimited
+                    ? "Message limit reached. Please wait..."
+                    : "Type your message..."
+                }
+                className="border-purple-500/10 bg-black/20 text-purple-300 placeholder:text-purple-300/50"
+                disabled={messageRateLimit.isLimited}
+              />
+              <Button
+                type="submit"
+                disabled={messageRateLimit.isLimited}
+                className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                Send
+              </Button>
+            </form>
           </div>
         </DialogContent>
       </Dialog>

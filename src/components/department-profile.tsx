@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { DepartmentDonationModal } from "./departmentDonationModal";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
@@ -54,6 +55,7 @@ export function DepartmentProfile() {
   const router = useRouter();
   const [performanceData, setPerformanceData] =
     useState<DepartmentPerformance | null>(null);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchPerformanceData = async () => {
@@ -192,14 +194,14 @@ export function DepartmentProfile() {
           <div className="flex gap-2">
             <Button
               className="flex-1 gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              onClick={() => router.push("http://localhost:3000/economy-dept")}
+              onClick={() => router.push("/economy-dept")}
             >
               View Department
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
               className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              onClick={() => router.push("http://localhost:3000/departments")}
+              onClick={() => setIsDonationModalOpen(true)}
             >
               <DollarSign className="h-4 w-4" />
               Support
@@ -207,6 +209,12 @@ export function DepartmentProfile() {
           </div>
         </div>
       </CardContent>
+      <DepartmentDonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+        departmentId="economy-dept"
+        departmentName="Economy Department"
+      />
     </Card>
   );
 }
