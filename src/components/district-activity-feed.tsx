@@ -105,6 +105,14 @@ export function DistrictActivityFeed() {
     return cleanDesc.substring(0, 200) + "...";
   };
 
+  const formatTitle = (title: string) => {
+    return title
+      .replace(/\"|\"/g, "") // Remove both types of quotes
+      .replace(/\*\*/g, "") // Remove markdown bold
+      .replace(/Title\:/g, "")
+      .trim();
+  };
+
   return (
     <Card className="border-purple-500/10 bg-black/40 backdrop-blur-xl">
       <CardHeader>
@@ -145,7 +153,7 @@ export function DistrictActivityFeed() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium text-purple-300">
-                            {event.title}
+                            {formatTitle(event.title)}
                           </p>
                           <p className="text-xs text-purple-300/70">
                             Type: {event.eventType}

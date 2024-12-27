@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Check, Loader2, DollarSign } from "lucide-react";
+import { Check, Loader2, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DonationModalProps {
@@ -20,6 +20,26 @@ interface DonationModalProps {
   projectTitle: string;
   projectId: string;
   onDonationComplete?: () => void;
+  project: {
+    id: string;
+    departmentId: string;
+    targetAmount: number;
+    currentAmount: number;
+    title: string;
+    description: string;
+    celebrationEvent: {
+      title: string;
+      description: string;
+      duration: number;
+      category: string;
+      impact: {
+        social: number;
+        economic: number;
+        cultural: number;
+        environmental: number;
+      };
+    };
+  };
 }
 
 type DonationState = "input" | "processing" | "success";
@@ -30,6 +50,7 @@ export function DonationModal({
   projectTitle,
   projectId,
   onDonationComplete,
+  project,
 }: DonationModalProps) {
   const [amount, setAmount] = useState("");
   const [donationState, setDonationState] = useState<DonationState>("input");
@@ -41,31 +62,59 @@ export function DonationModal({
     setDonationState("processing");
     setProgress(0);
 
-    // Simulate transaction processing
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return Math.min(100, prev + Math.random() * 10);
-      });
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => Math.min(100, prev + Math.random() * 10));
     }, 200);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      const response = await fetch(
+        "http://localhost:3001/api/donations/simple",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: "donor_" + Date.now(),
+            userName: "Anonymous Donor",
+            amount: Number(amount),
+            districtId: "central-district",
+            departmentId: project.departmentId,
+            purpose: project.title,
+            category: project.celebrationEvent.category,
+            subcategory: {
+              [project.celebrationEvent.category]: {
+                tradition:
+                  project.departmentId === "culture" ? "Local Arts" : undefined,
+                festival: project.celebrationEvent.title,
+                program: project.title,
+                community: `${
+                  project.departmentId.charAt(0).toUpperCase() +
+                  project.departmentId.slice(1)
+                } Community`,
+                impact: Object.entries(project.celebrationEvent.impact).sort(
+                  ([, a], [, b]) => b - a
+                )[0][0], // Get highest impact area
+              },
+            },
+          }),
+        }
+      );
 
-    clearInterval(interval);
-    setProgress(100);
-    setDonationState("success");
+      if (!response.ok) throw new Error("Donation failed");
 
-    // Reset after success
-    setTimeout(() => {
-      setDonationState("input");
-      setAmount("");
-      onDonationComplete?.();
-      onClose();
-    }, 2000);
+      clearInterval(progressInterval);
+      setProgress(100);
+      setDonationState("success");
+
+      setTimeout(() => {
+        setDonationState("input");
+        setAmount("");
+        onDonationComplete?.();
+        onClose();
+      }, 2000);
+    } catch (error) {
+      console.error("Donation error:", error);
+      clearInterval(progressInterval);
+    }
   };
 
   return (
@@ -86,10 +135,10 @@ export function DonationModal({
               </p>
 
               <div className="relative">
-                <DollarSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
+                <Coins className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
                 <Input
                   type="number"
-                  placeholder="Amount in CR"
+                  placeholder="Amount in NRA"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="border-purple-500/10 bg-black/20 pl-9 text-purple-300 placeholder:text-purple-300/50"
@@ -109,7 +158,7 @@ export function DonationModal({
                         "border-purple-500 bg-purple-500/20"
                     )}
                   >
-                    {preset} CR
+                    {preset} NRA
                   </Button>
                 ))}
               </div>
@@ -119,7 +168,7 @@ export function DonationModal({
                 disabled={!amount || isNaN(Number(amount))}
                 className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
               >
-                <DollarSign className="h-4 w-4" />
+                <Coins className="h-4 w-4" />
                 Donate
               </Button>
             </div>

@@ -418,19 +418,72 @@ export function AgentCCTV() {
 
                       {observation && (
                         <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Brain className="h-4 w-4 text-purple-400" />
-                            <span className="text-sm text-purple-300">
-                              {observation.narrative.slice(0, 600) +
-                                (observation.narrative.length > 600
-                                  ? "..."
-                                  : "")}
-                            </span>
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-2">
+                              <Brain className="h-4 w-4 text-purple-400 shrink-0" />
+                              <div className="text-sm text-purple-300 space-y-2">
+                                {observation.narrative
+                                  .split("\n\n")
+                                  .map((paragraph, index) => {
+                                    // Skip empty paragraphs
+                                    if (!paragraph.trim()) return null;
+
+                                    // Handle bullet points
+                                    if (paragraph.includes("* ")) {
+                                      return (
+                                        <div key={index} className="space-y-1">
+                                          <p className="text-purple-300/70 text-xs">
+                                            Additional observations:
+                                          </p>
+                                          <ul className="list-none space-y-1">
+                                            {paragraph
+                                              .split("* ")
+                                              .map((bullet, bulletIndex) => {
+                                                if (!bullet.trim()) return null;
+                                                return (
+                                                  <li
+                                                    key={bulletIndex}
+                                                    className="flex items-center gap-2"
+                                                  >
+                                                    <div className="w-1 h-1 rounded-full bg-purple-400"></div>
+                                                    {bullet.trim()}
+                                                  </li>
+                                                );
+                                              })}
+                                          </ul>
+                                        </div>
+                                      );
+                                    }
+
+                                    // Regular paragraphs
+                                    return (
+                                      <p
+                                        key={index}
+                                        className={
+                                          index === 0
+                                            ? "text-purple-300"
+                                            : "text-purple-300/80"
+                                        }
+                                      >
+                                        {paragraph
+                                          .replace("End Report.", "")
+                                          .replace("[END OF RECORDING]", "")
+                                          .replace("[CCTV SYSTEM SHUTDOWN]", "")
+                                          .replace(
+                                            "[WARNING: SYSTEM UPDATE IMMINENT]",
+                                            ""
+                                          )
+                                          .trim()}
+                                      </p>
+                                    );
+                                  })}
+                              </div>
+                            </div>
+                            <p className="text-sm text-purple-300/70">
+                              Area: {observation.area} - Location:{" "}
+                              {observation.location || "Unknown"}
+                            </p>
                           </div>
-                          <p className="text-sm text-purple-300/70">
-                            Area: {observation.area} - Location:{" "}
-                            {observation.location || "Unknown"}
-                          </p>
                         </div>
                       )}
 

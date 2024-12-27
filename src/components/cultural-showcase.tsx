@@ -113,11 +113,17 @@ export function CulturalShowcase() {
   }, []);
 
   const formatDescription = (description: string) => {
-    return description.replace(/\*\*/g, "").split("\n")[0].trim();
+    // Get first paragraph before any bullet points or sections
+    const firstParagraph = description.split("\n")[0];
+    return firstParagraph.replace(/\*\*/g, "").replace(/\"|\:/g, "").trim();
   };
 
   const formatTitle = (title: string) => {
-    return title.replace(/\*\*|\"|\:|Title\:/g, "").trim();
+    return title
+      .replace(/\*\*/g, "")
+      .replace(/\"|\:/g, "")
+      .replace(/Title\:/g, "")
+      .trim();
   };
 
   const gridCols = culturalItems.length <= 2 ? 1 : 2;
@@ -223,11 +229,39 @@ export function CulturalShowcase() {
                 </Badge>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                {selectedItem.description.split("\n").map((line, index) => (
-                  <p key={index} className="text-sm text-purple-300/70">
-                    {line.replace(/\*\*/g, "")}
-                  </p>
-                ))}
+                {selectedItem.description.split("\n").map((line, index) => {
+                  // Handle bullet points
+                  if (line.startsWith("*")) {
+                    return (
+                      <li
+                        key={index}
+                        className="text-sm text-purple-300/70 ml-4"
+                      >
+                        {line.replace("*", "•").trim()}
+                      </li>
+                    );
+                  }
+                  // Handle section headers
+                  if (line.includes("**")) {
+                    return (
+                      <h3
+                        key={index}
+                        className="text-sm font-medium text-purple-300 mt-6"
+                      >
+                        {line.replace(/\*\*/g, "")}
+                      </h3>
+                    );
+                  }
+                  // Regular text
+                  if (line.trim()) {
+                    return (
+                      <p key={index} className="text-sm text-purple-300/70">
+                        {line}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
               </div>
             </>
           )}

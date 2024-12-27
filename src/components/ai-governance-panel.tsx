@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DonationModal } from "./donation-modal";
 import {
   PartyPopper,
   Users,
@@ -51,25 +52,25 @@ interface DonationGoal {
 export function CityEventsPanel() {
   const [events, setEvents] = useState<DonationGoal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<DonationGoal | null>(
+    null
+  );
+
+  const fetchDonationGoals = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/api/donations/goals");
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error("Error fetching donation goals:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchDonationGoals = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:3001/api/donations/goals"
-        );
-        const data = await response.json();
-        setEvents(data);
-      } catch (error) {
-        console.error("Error fetching donation goals:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchDonationGoals();
-
-    // Refresh every 30 seconds
     const interval = setInterval(fetchDonationGoals, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -238,6 +239,10 @@ export function CityEventsPanel() {
                         <Button
                           variant="ghost"
                           className="gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
+                          onClick={() => {
+                            setSelectedProject(event);
+                            setIsDonationModalOpen(true);
+                          }}
                         >
                           <DollarSign className="h-4 w-4" />
                           Support Project
@@ -252,6 +257,17 @@ export function CityEventsPanel() {
           </div>
         </ScrollArea>
       </CardContent>
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+        projectTitle={selectedProject?.title || ""}
+        projectId={selectedProject?.id || ""}
+        project={selectedProject!}
+        onDonationComplete={() => {
+          // Refresh donation goals if needed
+          fetchDonationGoals();
+        }}
+      />
     </Card>
   );
 }

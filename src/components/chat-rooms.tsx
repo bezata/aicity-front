@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { DonationModal } from "./donation-modal";
 import {
   Send,
   Brain,
@@ -140,6 +141,7 @@ export function ChatRooms() {
   const [currentConversation, setCurrentConversation] = useState<string | null>(
     null
   );
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeAgents] = useState<AIAgent[]>([
     {
@@ -166,6 +168,9 @@ export function ChatRooms() {
     },
   ]);
   const [recentUserMessages] = useState<Set<string>>(new Set());
+  const [selectedProject, setSelectedProject] = useState<DonationGoal | null>(
+    null
+  );
 
   const handleWebSocketMessage = useCallback((wsMessage: WSMessage | any) => {
     if (wsMessage.type === "agent_conversation") {
@@ -656,6 +661,10 @@ export function ChatRooms() {
                     <Button
                       className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
                       size="sm"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setIsDonationModalOpen(true);
+                      }}
                     >
                       <DollarSign className="h-3 w-3" />
                       Support Project
@@ -667,6 +676,13 @@ export function ChatRooms() {
           </div>
         </ScrollArea>
       </div>
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
+        projectTitle={selectedProject?.title || ""}
+        projectId={selectedProject?.id || ""}
+        project={selectedProject!}
+      />
     </div>
   );
 }
