@@ -62,20 +62,8 @@ export function SessionViewer({
   const [messages, setMessages] = React.useState<Message[]>(
     session.messages?.map((msg: any) => ({
       id: msg.id,
-      content: (msg.content || "")
-        .replace("[Your Name]", "")
-        .replace(/^"|"$/g, "")
-        .trim(),
-      sender: {
-        id: msg.sender.id,
-        name: msg.sender.name
-          ? msg.sender.name.charAt(0).toUpperCase() + msg.sender.name.slice(1)
-          : msg.sender.id.charAt(0).toUpperCase() + msg.sender.id.slice(1),
-        nameJp: msg.sender.nameJp,
-        role: msg.sender.role,
-        avatar: msg.sender.avatar,
-        isAgent: msg.sender.isAgent,
-      },
+      content: msg.content.replace(/^"|"$/g, "").trim(),
+      sender: msg.sender,
       timestamp: msg.timestamp,
     })) || []
   );
@@ -116,7 +104,9 @@ export function SessionViewer({
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span className="text-xl font-light tracking-wider">
-              {session.title}
+              {session.id.startsWith("emergency-")
+                ? "🚨 Emergency Collaboration 🤖✨"
+                : session.title}
             </span>
             <Badge
               variant="outline"

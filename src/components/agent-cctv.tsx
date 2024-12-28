@@ -431,6 +431,8 @@ export function AgentCCTV() {
                                   .replace(/\[END OF RECORDING\]/g, "")
                                   .replace(/\[CCTV SYSTEM SHUTDOWN\]/g, "")
                                   .replace("END OF ENTRY", "")
+                                  .replace("End of Report", "")
+                                  .replace("1", "")
                                   .replace(
                                     /\[WARNING: SYSTEM UPDATE IMMINENT\]/g,
                                     ""

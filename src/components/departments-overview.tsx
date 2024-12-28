@@ -96,6 +96,23 @@ interface Session {
   }[];
 }
 
+interface Collaboration {
+  id: string;
+  status: string;
+  agents: { id: string }[];
+  messages: any[];
+  decisions: any[];
+  metrics: {
+    consensusLevel: number;
+    progressRate: number;
+    effectiveness: number;
+    participationScore: Record<string, number>;
+    topicsAnalyzed: number;
+    consensusLevels: number[];
+    averageConsensus: number;
+  };
+}
+
 export function DepartmentsOverview() {
   const router = useRouter();
   const { address } = useAppKitAccount();
@@ -104,148 +121,61 @@ export function DepartmentsOverview() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
 
-  const emergencyAlerts = [
-    {
-      id: "emergency-1",
-      title: "🚨 Emergency Alert",
-      titleJp: "緊急アラート",
-      content:
-        "🌸 Cherry blossom festival preparations needed! All hands on deck for this beautiful emergency! 🎋",
-      departmentId: "culture",
-      participants: 3,
-      status: "live",
-    },
-    {
-      id: "emergency-2",
-      title: "🚨 Emergency Alert",
-      titleJp: "緊急アラート",
-      content:
-        "🐱 Cat stuck in a quantum computer! Need immediate assistance from our tech team! 🖥️",
-      departmentId: "tech",
-      participants: 4,
-      status: "live",
-    },
-    {
-      id: "emergency-3",
-      title: "🚨 Emergency Alert",
-      titleJp: "緊急アラート",
-      content:
-        "🎮 Virtual reality festival overload! Too much fun detected in sector 7! 🎉",
-      departmentId: "entertainment",
-      participants: 5,
-      status: "live",
-    },
-    {
-      id: "emergency-4",
-      title: "🚨 Emergency Alert",
-      titleJp: "緊急アラート",
-      content:
-        "🌈 Rainbow bridge malfunction! Need immediate recalibration of happiness levels! ✨",
-      departmentId: "infrastructure",
-      participants: 3,
-      status: "live",
-    },
-    {
-      id: "emergency-5",
-      title: "🚨 Emergency Alert",
-      titleJp: "緊急アラート",
-      content:
-        "🍜 Ramen shortage detected! Emergency noodle supply needed in downtown district! 🥢",
-      departmentId: "services",
-      participants: 4,
-      status: "live",
-    },
-  ];
-
   useEffect(() => {
-    const fetchActiveSessions = async () => {
+    const fetchCollaborations = async () => {
       try {
         const response = await fetch(
           "http://localhost:3001/api/collaborations"
         );
-        if (!response.ok) {
-          throw new Error("Failed to fetch collaborations");
-        }
-        const data = await response.json();
-        if (data.success) {
-          const formattedSessions = data.data.map((collab: any) => ({
-            id: collab.id,
-            departmentId: collab.agents[0]?.id || "unknown",
-            title: collab.messages[0]?.topics?.includes("emergency")
-              ? "Emergency Alert"
-              : collab.messages[0]?.content.split("\n")[0] ||
-                "Untitled Session",
-            titleJp: collab.messages[0]?.content.split("\n")[1] || "",
-            participants: collab.agents.length,
-            startTime: new Date(collab.messages[0]?.timestamp).toISOString(),
-            status: collab.status,
-            participantsDetails: collab.agents.map((agent: any) => ({
-              id: agent.id,
-              name: agent.name || agent.id,
-              nameJp: `エージェント`,
-              role: "Collaborator",
+        if (!response.ok) throw new Error("Failed to fetch collaborations");
+        const { data } = await response.json();
+
+        // Convert collaborations to sessions format
+        const sessions: Session[] = data.map((collab: Collaboration) => ({
+          id: collab.id,
+          title: `Collaboration Session`,
+          titleJp: "コラボレーションセッション",
+          departmentId: collab.agents[0]?.id || "unknown",
+          participants: collab.agents.length,
+          startTime: new Date().toISOString(),
+          status:
+            collab.status === "completed"
+              ? ("completed" as const)
+              : ("live" as const),
+          participantsDetails: collab.agents.map((agent) => ({
+            id: agent.id,
+            name: agent.id.charAt(0).toUpperCase() + agent.id.slice(1),
+            nameJp: agent.id,
+            role: "Department Agent",
+            avatar: "/placeholder.svg?height=40&width=40",
+            isAgent: true,
+          })),
+          messages: collab.messages.map((msg: any) => ({
+            id: `msg-${msg.timestamp}`,
+            content: msg.content,
+            sender: {
+              id: msg.agentId,
+              name: msg.agentId.charAt(0).toUpperCase() + msg.agentId.slice(1),
+              nameJp: msg.agentId,
+              role: "Department Agent",
               avatar: "/placeholder.svg?height=40&width=40",
               isAgent: true,
-            })),
-            messages: collab.messages.map((msg: any) => ({
-              id: msg.timestamp.toString(),
-              content: msg.content,
-              sender: {
-                id: msg.agentId,
-                name:
-                  collab.agents.find((a: any) => a.id === msg.agentId)?.name ||
-                  msg.agentId,
-                nameJp: `エージェント`,
-                role: "Collaborator",
-                avatar: "/placeholder.svg?height=40&width=40",
-                isAgent: true,
-              },
-              timestamp: new Date(msg.timestamp).toISOString(),
-            })),
-          }));
+            },
+            timestamp: new Date(msg.timestamp).toISOString(),
+          })),
+        }));
 
-          // Add random emergency alerts
-          const randomEmergencies = emergencyAlerts
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 2)
-            .map((alert) => ({
-              ...alert,
-              startTime: new Date().toISOString(),
-              participantsDetails: Array(alert.participants).fill({
-                id: "agent",
-                name: "Emergency Agent",
-                nameJp: "緊急対応エージェント",
-                role: "Emergency Responder",
-                avatar: "/placeholder.svg?height=40&width=40",
-                isAgent: true,
-              }),
-              messages: [
-                {
-                  id: Date.now().toString(),
-                  content: alert.content,
-                  sender: {
-                    id: "system",
-                    name: "System",
-                    nameJp: "システム",
-                    role: "Alert System",
-                    avatar: "/placeholder.svg?height=40&width=40",
-                    isAgent: true,
-                  },
-                  timestamp: new Date().toISOString(),
-                },
-              ],
-            }));
-
-          setActiveSessions([...randomEmergencies, ...formattedSessions]);
-        }
+        setActiveSessions(
+          sessions.filter((s) => s.status === "completed").slice(0, 5)
+        );
       } catch (error) {
         console.error("Error fetching collaborations:", error);
+        setActiveSessions([]);
       }
     };
 
-    fetchActiveSessions();
-    // Fetch every 5 minutes
-    const interval = setInterval(fetchActiveSessions, 5 * 60 * 1000);
+    fetchCollaborations();
+    const interval = setInterval(fetchCollaborations, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -263,7 +193,9 @@ export function DepartmentsOverview() {
     const fetchDepartments = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:3001/api/departments");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/departments`
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }
@@ -349,9 +281,9 @@ export function DepartmentsOverview() {
             <CardHeader>
               <div>
                 <CardTitle className="font-light tracking-wider">
-                  Recent Sessions
+                  Recent Completed Sessions
                 </CardTitle>
-                <CardDescription>最近のセッション</CardDescription>
+                <CardDescription>完了したセッション</CardDescription>
               </div>
             </CardHeader>
             <CardContent>

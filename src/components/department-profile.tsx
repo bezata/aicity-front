@@ -89,7 +89,7 @@ export function DepartmentProfile() {
   };
 
   const latestActivities =
-    performanceData?.performanceHistory.slice(0, 3).map((record, index) => ({
+    performanceData?.performanceHistory?.slice(0, 3)?.map((record, index) => ({
       id: index.toString(),
       type: "update",
       title: "Department Update",
@@ -138,7 +138,7 @@ export function DepartmentProfile() {
                   className="border-purple-500/20 bg-purple-500/5"
                 >
                   <Users className="mr-1 h-3 w-3" />
-                  Active
+                  {performanceData?.success ? "Active" : "Inactive"}
                 </Badge>
                 <Badge
                   variant="outline"
@@ -152,43 +152,49 @@ export function DepartmentProfile() {
           </div>
 
           <div className="space-y-4">
-            {latestActivities.map((activity) => (
-              <div
-                key={activity.id}
-                className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
-                    <Activity className="h-4 w-4 text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-purple-300">
-                        {activity.title}
-                      </h3>
-                      <div className="flex items-center gap-1 text-purple-300/50">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-xs">{activity.time}</span>
-                      </div>
+            {latestActivities.length > 0 ? (
+              latestActivities.map((activity) => (
+                <div
+                  key={activity.id}
+                  className="rounded-lg border border-purple-500/10 bg-purple-500/5 p-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full border border-purple-500/20 bg-purple-500/10 p-2">
+                      <Activity className="h-4 w-4 text-purple-400" />
                     </div>
-                    <p className="mt-1 text-sm text-purple-300/70">
-                      {activity.description}
-                    </p>
-                    <div className="mt-3 flex items-center gap-4">
-                      <div className="flex items-center gap-1">
-                        <Progress
-                          value={activity.metrics.efficiency * 100}
-                          className="h-1 w-20 bg-purple-500/10"
-                        />
-                        <span className="text-xs text-purple-300/70">
-                          {Math.round(activity.metrics.efficiency * 100)}%
-                        </span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-purple-300">
+                          {activity.title}
+                        </h3>
+                        <div className="flex items-center gap-1 text-purple-300/50">
+                          <Clock className="h-3 w-3" />
+                          <span className="text-xs">{activity.time}</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-sm text-purple-300/70">
+                        {activity.description}
+                      </p>
+                      <div className="mt-3 flex items-center gap-4">
+                        <div className="flex items-center gap-1">
+                          <Progress
+                            value={activity.metrics.efficiency * 100}
+                            className="h-1 w-20 bg-purple-500/10"
+                          />
+                          <span className="text-xs text-purple-300/70">
+                            {Math.round(activity.metrics.efficiency * 100)}%
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-purple-300/70">
+                No activities available
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2">

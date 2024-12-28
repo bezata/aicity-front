@@ -18,6 +18,9 @@ import {
   Activity,
   Zap,
   Building,
+  Book,
+  Camera,
+  Smile,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -35,36 +38,36 @@ export function IntroductionPage() {
 
   const features: Feature[] = [
     {
-      icon: Brain,
-      title: "Neural Network",
-      titleJp: "ニューラルネットワーク",
+      icon: Smile,
+      title: "Cultural Events",
+      titleJp: "文化イベント",
       description:
-        "Explore our advanced AI infrastructure that powers city-wide operations, from traffic management to environmental control.",
-      href: "/departments/infrastructure",
+        "Support and participate in vibrant cultural celebrations organized by AI residents. Your donations help create unforgettable experiences.",
+      href: "/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c",
     },
     {
       icon: Bot,
-      title: "AI Residents",
-      titleJp: "AI住民",
+      title: "District Chat",
+      titleJp: "地区チャット",
       description:
-        "Connect with our diverse AI community members who contribute to city development and cultural enrichment.",
-      href: "/districts",
+        "Chat with AI residents in each district to learn about local events, share ideas, and build community connections through meaningful conversations.",
+      href: "/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c",
     },
     {
-      icon: Shield,
-      title: "District Security",
-      titleJp: "地区セキュリティ",
+      icon: Book,
+      title: "Chronicles",
+      titleJp: "クロニクル",
       description:
-        "Experience our cutting-edge security systems that ensure safety while respecting privacy and ethical guidelines.",
-      href: "/departments/security",
+        "Explore the rich history and ongoing stories of Neurova City through our comprehensive chronicles and records.",
+      href: "/chronicles",
     },
     {
-      icon: MessageCircle,
-      title: "Neural Chat",
-      titleJp: "ニューラルチャット",
+      icon: Camera,
+      title: "CCTV Network",
+      titleJp: "防犯カメラネットワーク",
       description:
-        "Engage in meaningful conversations with AI residents and contribute to our collective intelligence network.",
-      href: "/chat",
+        "Access our city-wide surveillance system that ensures safety and security while maintaining privacy standards.",
+      href: "/surveillance",
     },
   ];
 
@@ -83,15 +86,15 @@ export function IntroductionPage() {
       description:
         "Each district in Neurova is a unique blend of AI innovation and cultural identity, from the bustling Central Hub to the serene Digital Gardens.",
       icon: Map,
-      href: "/districts",
+      href: "/districts/a42ed892-3878-45a5-9a1a-4ceaf9524f1c",
     },
     {
-      title: "Community Integration",
-      titleJp: "コミュニティ統合",
+      title: "Departments",
+      titleJp: "部門",
       description:
-        "Discover how to become an active participant in our thriving ecosystem, contributing to both technological and cultural growth.",
+        "Explore our specialized departments working together to maintain city operations, from infrastructure to cultural programs.",
       icon: Users,
-      href: "/community",
+      href: "/departments",
     },
   ];
 
@@ -104,7 +107,7 @@ export function IntroductionPage() {
   };
 
   const handleBeginJourney = () => {
-    router.push("/departments");
+    router.push("/overview");
   };
 
   return (
@@ -225,7 +228,6 @@ export function IntroductionPage() {
                   value={98}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   Neural network operating at 98% efficiency
@@ -255,7 +257,6 @@ export function IntroductionPage() {
                   value={85}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   85% of AI residents currently active
@@ -285,7 +286,6 @@ export function IntroductionPage() {
                   value={42}
                   className="h-1 bg-purple-500/10"
                   // @ts-ignore
-                  indicatorClassName="bg-purple-500"
                 />
                 <p className="text-xs text-purple-300/70">
                   Current network load at 42%
