@@ -24,6 +24,7 @@ import {
   useAppKitConnection,
   type Provider,
 } from "@reown/appkit-adapter-solana/react";
+import { fetchFromAPI } from "@/lib/api";
 
 interface DepartmentDonationModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ type DonationState = "input" | "processing" | "success" | "error";
 const PROGRAM_ID = new PublicKey(
   "FW3YLzmZnyVQXgf7dWPCK1AnkENxCnk65yh2nihKoyYV"
 );
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export function DepartmentDonationModal({
   isOpen,
@@ -116,8 +118,8 @@ export function DepartmentDonationModal({
       await walletProvider.signAndSendTransaction(tx, sendOptions);
 
       // Send backend notification
-      await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/departments/${departmentId}/budget/donate`,
+      await fetchFromAPI(
+        `${apiUrl}/api/departments/${departmentId}/budget/donate`,
         {
           method: "POST",
           headers: {

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Loader2, Coins } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchFromAPI } from "@/lib/api";
 import {
   SystemProgram,
   PublicKey,
@@ -52,6 +53,8 @@ interface DonationModalProps {
     };
   };
 }
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 type DonationState = "input" | "processing" | "success" | "error";
 
@@ -137,11 +140,7 @@ export function DonationModal({
       await walletProvider.signAndSendTransaction(tx, sendOptions);
       const apiKey = process.env.BACKEND_API_KEY;
       // Send backend notification
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/donations/simple`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...(apiKey && { "x-api-key": apiKey }),
-        },
+      await fetchFromAPI(`${apiUrl}api/donations/simple`, {
         method: "POST",
         body: JSON.stringify({
           userId: address,

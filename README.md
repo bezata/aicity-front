@@ -42,6 +42,15 @@ AI City Frontend is a Next.js-based web application that provides an interface f
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [Solana Web3.js](https://solana-labs.github.io/solana-web3.js/) - Blockchain integration
 - [ShadcnUI](https://ui.shadcn.com/) - UI components
+- **Docker**
+
+  ```bash
+  # Build the Docker image
+  docker build -t aicity-frontend .
+
+  # Run the container
+  docker run -p 3000:3000 aicity-frontend
+  ```
 
 ## Getting Started
 
