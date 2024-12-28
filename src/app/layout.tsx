@@ -16,7 +16,7 @@ const projectId = "0cdaef95ad82b31ab7175ac7423dd464";
 const metadata = {
   name: "Neurova",
   description: "Neurova",
-  url: "https://neurova.com", // origin must match your domain & subdomain
+  url: "https://neurova.fun", // origin must match your domain & subdomain
   icons: ["https://avatars.githubusercontent.com/u/179229932"],
 };
 
