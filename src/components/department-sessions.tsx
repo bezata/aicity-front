@@ -133,6 +133,7 @@ interface EmergencyMessage {
 }
 
 export function DepartmentSessions() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const params = useParams();
   const { address } = useAppKitAccount();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -245,12 +246,11 @@ export function DepartmentSessions() {
     [activeSession]
   );
 
-  const { connected, connectionState, sendMessage } = useWebSocket(
-    "ws://localhost:3001/ws",
-    {
-      onMessage: handleWebSocketMessage,
-    }
-  );
+  const wsUrl = process.env.BACKEND_WS_URL || "";
+
+  const { connected, connectionState, sendMessage } = useWebSocket(wsUrl, {
+    onMessage: handleWebSocketMessage,
+  });
 
   // Check rate limit status
   useEffect(() => {
@@ -281,7 +281,13 @@ export function DepartmentSessions() {
       try {
         // Fetch scheduled collaborations
         const sessionsResponse = await fetch(
-          `http://localhost:3001/api/departments/${params.id}/scheduled-collaborations`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/departments/${params.id}/scheduled-collaborations`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         if (!sessionsResponse.ok) {
           throw new Error(
@@ -292,7 +298,13 @@ export function DepartmentSessions() {
 
         // Fetch collaboration history
         const historyResponse = await fetch(
-          `http://localhost:3001/api/departments/${params.id}/collaboration-history`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/departments/${params.id}/collaboration-history`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
@@ -310,7 +322,13 @@ export function DepartmentSessions() {
             if (session.status === "completed") {
               try {
                 const collabResponse = await fetch(
-                  `http://localhost:3001/api/collaborations/${session.sessionId}`
+                  `${process.env.NEXT_PUBLIC_API_URL}/api/collaborations/${session.sessionId}`,
+                  {
+                    headers: {
+                      "Content-Type": "application/json",
+                      ...(apiKey && { "x-api-key": apiKey }),
+                    },
+                  }
                 );
                 if (collabResponse.ok) {
                   const collabData = await collabResponse.json();

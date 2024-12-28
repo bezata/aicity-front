@@ -89,6 +89,7 @@ interface CityMetrics {
 
 export function MainDashboard() {
   const router = useRouter();
+  const apiUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [systemStatus, setSystemStatus] = useState<
     "normal" | "warning" | "critical"
   >("normal");
@@ -116,9 +117,11 @@ export function MainDashboard() {
       setIsLoading(true);
       try {
         // Fetch districts
-        const districtsResponse = await fetch(
-          "http://localhost:3001/api/districts"
-        );
+        const districtsResponse = await fetch(`/api/districts/`, {
+          headers: {
+            "x-api-key": process.env.NEXT_PUBLIC_BACKEND_API_KEY || "",
+          },
+        });
         const districtsData = await districtsResponse.json();
         if (districtsData.success && districtsData.data) {
           console.log("Districts data:", districtsData.data); // Debug log
@@ -128,9 +131,21 @@ export function MainDashboard() {
         // Fetch metrics in parallel
         const [metricsResponse, vitalsResponse, safetyResponse] =
           await Promise.all([
-            fetch(`/api/districts/${districtId}/metrics`),
-            fetch(`/api/districts/${districtId}/vitals`),
-            fetch(`/api/districts/${districtId}/metrics/safety`),
+            fetch(`/api/districts/${districtId}/metrics`, {
+              headers: {
+                "x-api-key": process.env.NEXT_PUBLIC_BACKEND_API_KEY || "",
+              },
+            }),
+            fetch(`/api/districts/${districtId}/vitals`, {
+              headers: {
+                "x-api-key": process.env.NEXT_PUBLIC_BACKEND_API_KEY || "",
+              },
+            }),
+            fetch(`/api/districts/${districtId}/metrics/safety`, {
+              headers: {
+                "x-api-key": process.env.NEXT_PUBLIC_BACKEND_API_KEY || "",
+              },
+            }),
           ]);
 
         const [metrics, vitals, safety] = await Promise.all([

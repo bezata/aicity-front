@@ -103,7 +103,6 @@ export function EntityProfile() {
                 value={stats.consciousness}
                 className="h-1 bg-purple-500/10"
                 // @ts-ignore
-                indicatorClassName="bg-purple-500"
               />
             </div>
 
@@ -117,8 +116,6 @@ export function EntityProfile() {
               <Progress
                 value={stats.harmony}
                 className="h-1 bg-purple-500/10"
-                // @ts-ignore
-                indicatorClassName="bg-green-500"
               />
             </div>
 
@@ -132,8 +129,6 @@ export function EntityProfile() {
               <Progress
                 value={stats.influence}
                 className="h-1 bg-purple-500/10"
-                // @ts-ignore
-                indicatorClassName="bg-blue-500"
               />
             </div>
 
@@ -149,8 +144,6 @@ export function EntityProfile() {
               <Progress
                 value={stats.contribution}
                 className="h-1 bg-purple-500/10"
-                // @ts-ignore
-                indicatorClassName="bg-yellow-500"
               />
             </div>
           </div>

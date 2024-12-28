@@ -27,16 +27,21 @@ interface Event {
 }
 
 export function DistrictActivityFeed() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const [events, setEvents] = useState<Event[]>([]);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(
-          "http://localhost:3001/api/chronicles/events"
-        );
+        const response = await fetch(`${apiUrl}/api/chronicles/events`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey && { "x-api-key": apiKey }),
+          },
+        });
         const data = await response.json();
         if (data.success) {
           // Sort by timestamp in descending order (newest first)

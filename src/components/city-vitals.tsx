@@ -37,7 +37,6 @@ export function CityVitals({
             value={consciousness}
             className="h-1 bg-purple-500/10"
             // @ts-ignore
-            indicatorClassName="bg-purple-500"
           />
         </div>
 
@@ -55,7 +54,6 @@ export function CityVitals({
             value={harmony}
             className="h-1 bg-purple-500/10"
             // @ts-ignore
-            indicatorClassName="bg-green-500"
           />
         </div>
 
@@ -69,12 +67,7 @@ export function CityVitals({
               {energy}%
             </span>
           </div>
-          <Progress
-            value={energy}
-            className="h-1 bg-purple-500/10"
-            // @ts-ignore
-            indicatorClassName="bg-blue-500"
-          />
+          <Progress value={energy} className="h-1 bg-purple-500/10" />
         </div>
 
         <div className="space-y-2">
@@ -87,12 +80,7 @@ export function CityVitals({
               {activity}%
             </span>
           </div>
-          <Progress
-            value={activity}
-            className="h-1 bg-purple-500/10"
-            // @ts-ignore
-            indicatorClassName="bg-yellow-500"
-          />
+          <Progress value={activity} className="h-1 bg-purple-500/10" />
         </div>
       </CardContent>
     </Card>

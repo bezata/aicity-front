@@ -115,6 +115,7 @@ interface Collaboration {
 
 export function DepartmentsOverview() {
   const router = useRouter();
+  const apiKey = process.env.BACKEND_API_KEY;
   const { address } = useAppKitAccount();
   const [isLoading, setIsLoading] = useState(true);
   const [departments, setDepartments] = useState<Department[]>([]);

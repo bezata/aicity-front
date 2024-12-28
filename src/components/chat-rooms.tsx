@@ -137,6 +137,7 @@ interface ConversationResponse {
 }
 
 export function ChatRooms() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const { address } = useAppKitAccount();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -267,9 +268,9 @@ export function ChatRooms() {
 
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
-
+  const wsUrl = process.env.BACKEND_WS_URL || "";
   const { connected, connectionState, connectionQuality, sendMessage } =
-    useWebSocket("ws://localhost:3001/ws", {
+    useWebSocket(wsUrl, {
       onMessage: handleWebSocketMessage,
     });
 
@@ -277,7 +278,13 @@ export function ChatRooms() {
     const fetchDonationGoals = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3001/api/donations/goals"
+          `${process.env.NEXT_PUBLIC_API_URL}/api/donations/goals`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         const data = await response.json();
         setDonationProjects(data);
@@ -295,7 +302,13 @@ export function ChatRooms() {
     async (conversationId: string) => {
       try {
         const response = await fetch(
-          `http://localhost:3001/api/conversations/${conversationId}`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/conversations/${conversationId}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         if (!response.ok) {
           if (response.status === 500) {
@@ -357,7 +370,15 @@ export function ChatRooms() {
 
     const fetchConversations = async () => {
       try {
-        const response = await fetch("http://localhost:3001/api/conversations");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}api/conversations`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Failed to fetch conversations");
         }

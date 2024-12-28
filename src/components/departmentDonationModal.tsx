@@ -28,29 +28,29 @@ import {
 interface DepartmentDonationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  departmentId: string;
   departmentName: string;
+  departmentId: string;
   onDonationComplete?: () => void;
 }
 
 type DonationState = "input" | "processing" | "success" | "error";
 
 const PROGRAM_ID = new PublicKey(
-  "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
+  "FW3YLzmZnyVQXgf7dWPCK1AnkENxCnk65yh2nihKoyYV"
 );
 
 export function DepartmentDonationModal({
   isOpen,
   onClose,
-  departmentId,
   departmentName,
+  departmentId,
   onDonationComplete,
 }: DepartmentDonationModalProps) {
   const [amount, setAmount] = useState("");
   const [donationState, setDonationState] = useState<DonationState>("input");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string>("");
-
+  const apiKey = process.env.BACKEND_API_KEY;
   const { address } = useAppKitAccount();
   const { connection } = useAppKitConnection();
   const { walletProvider } = useAppKitProvider<Provider>("solana");
@@ -113,21 +113,22 @@ export function DepartmentDonationModal({
         skipPreflight: false,
       };
 
-      const signature = await walletProvider.signAndSendTransaction(
-        tx,
-        sendOptions
-      );
+      await walletProvider.signAndSendTransaction(tx, sendOptions);
 
       // Send backend notification
       await fetch(
-        `http://localhost:3001/api/departments/${departmentId}/budget/donate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/departments/${departmentId}/budget/donate`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(apiKey && { "x-api-key": apiKey }),
+          },
           body: JSON.stringify({
             amount: Number(amount),
             donorId: address,
-            transactionHash: signature || undefined,
+            message: "",
+            transactionHash: "",
           }),
         }
       );
@@ -157,7 +158,7 @@ export function DepartmentDonationModal({
       <DialogContent className="border-purple-500/10 bg-black/90 text-purple-50 backdrop-blur-xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-light tracking-wider">
-            Support {departmentName}
+            Support Department
           </DialogTitle>
         </DialogHeader>
 
@@ -165,7 +166,7 @@ export function DepartmentDonationModal({
           {donationState === "input" && (
             <div className="space-y-4">
               <p className="text-sm text-purple-300/70">
-                Enter the amount of $NRA you would like to donate to support the{" "}
+                Enter the amount of tokens you would like to donate to support{" "}
                 <span className="text-purple-300">{departmentName}</span>
               </p>
 
@@ -173,7 +174,7 @@ export function DepartmentDonationModal({
                 <Coins className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-400" />
                 <Input
                   type="number"
-                  placeholder="Amount in $NRA"
+                  placeholder="Amount in tokens"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="border-purple-500/10 bg-black/20 pl-9 text-purple-300 placeholder:text-purple-300/50"
@@ -193,24 +194,18 @@ export function DepartmentDonationModal({
                         "border-purple-500 bg-purple-500/20"
                     )}
                   >
-                    {preset} $NRA
+                    {preset} tokens
                   </Button>
                 ))}
               </div>
 
               <Button
                 onClick={handleDonate}
-                disabled={
-                  !amount ||
-                  isNaN(Number(amount)) ||
-                  !address ||
-                  !connection ||
-                  !walletProvider?.publicKey
-                }
+                disabled={!address || !amount || isNaN(Number(amount))}
                 className="w-full gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 disabled:opacity-50"
               >
                 <Coins className="h-4 w-4" />
-                Donate
+                {!address ? "Connect Wallet" : "Donate"}
               </Button>
             </div>
           )}
@@ -256,7 +251,7 @@ export function DepartmentDonationModal({
                   Donation Successful!
                 </p>
                 <p className="text-sm text-purple-300/70">
-                  Thank you for supporting the {departmentName} Department
+                  Thank you for supporting this department
                 </p>
               </div>
             </div>

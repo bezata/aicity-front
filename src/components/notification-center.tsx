@@ -36,7 +36,12 @@ export function NotificationCenter() {
       try {
         setIsLoading(true);
         const response = await fetch(
-          "http://localhost:3001/api/chronicles/incidents"
+          `${process.env.NEXT_PUBLIC_API_URL}/api/chronicles/incidents`,
+          {
+            headers: {
+              "x-api-key": process.env.BACKEND_API_KEY || "",
+            },
+          }
         );
         const data = await response.json();
         if (data.success) {

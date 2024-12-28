@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_URL = "http://localhost:3001/api";
-
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const apiKey = process.env.BACKEND_API_KEY;
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -44,6 +44,7 @@ export async function POST(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(apiKey && { "x-api-key": apiKey }),
         },
         body: JSON.stringify(body),
       }

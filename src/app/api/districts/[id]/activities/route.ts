@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const API_URL = "http://localhost:3001/api";
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -12,7 +10,7 @@ export async function GET(
     const limit = searchParams.get("limit") || "10";
     const before = searchParams.get("before");
 
-    let url = `${API_URL}/districts/${params.id}/activities?limit=${limit}`;
+    let url = `${process.env.NEXT_PUBLIC_API_URL}/api/districts/${params.id}/activities?limit=${limit} `;
     if (before) {
       url += `&before=${before}`;
     }

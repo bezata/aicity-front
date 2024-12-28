@@ -42,6 +42,7 @@ const typeIcons: { [key: string]: any } = {
 };
 
 export function CulturalShowcase() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const [culturalItems, setCulturalItems] = useState<CulturalItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<CulturalItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +87,13 @@ export function CulturalShowcase() {
 
         // Fetch fresh data first
         const response = await fetch(
-          "http://localhost:3001/api/culture/popular"
+          `${process.env.NEXT_PUBLIC_API_URL}api/culture/popular`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }
         );
         const data = await response.json();
 

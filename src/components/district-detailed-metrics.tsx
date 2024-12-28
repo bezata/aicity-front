@@ -200,7 +200,6 @@ export function DistrictDetailedMetrics() {
                                   value={metric.value}
                                   className="h-2 bg-purple-500/10"
                                   // @ts-ignore
-                                  indicatorClassName="bg-purple-500"
                                 />
                               </div>
                             </div>

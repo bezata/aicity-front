@@ -99,10 +99,8 @@ interface ApiResponse<T> {
   data: T[];
 }
 
-const CACHE_KEY = "city_chronicle_data";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
-
 export default function AICityChronicle() {
+  const apiKey = process.env.BACKEND_API_KEY;
   const [selectedStory, setSelectedStory] = useState<string | null>(null);
   const [lightningPosition, setLightningPosition] = useState({ x: 50, y: 50 });
   const [viewCount, setViewCount] = useState<Record<string, number>>({});
@@ -124,20 +122,60 @@ export default function AICityChronicle() {
 
       try {
         console.log("Fetching chronicle data...");
-        const newsRes = await fetch(
-          "http://localhost:3001/api/chronicles/news"
-        );
-        console.log("News response status:", newsRes.status);
 
-        if (!newsRes.ok) {
-          throw new Error(`News API failed with status ${newsRes.status}`);
+        // Fetch all data types in parallel
+        const [newsRes, eventsRes, incidentsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/news`, {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/events`, {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chronicles/incidents`, {
+            headers: {
+              "Content-Type": "application/json",
+              ...(apiKey && { "x-api-key": apiKey }),
+            },
+          }),
+        ]);
+
+        console.log("Response status:", {
+          news: newsRes.status,
+          events: eventsRes.status,
+          incidents: incidentsRes.status,
+        });
+
+        // Check if any request failed
+        if (!newsRes.ok || !eventsRes.ok || !incidentsRes.ok) {
+          throw new Error("One or more API requests failed");
         }
 
-        const newsData = await newsRes.json();
-        console.log("News data:", newsData);
+        // Parse all responses
+        const [newsData, eventsData, incidentsData] = await Promise.all([
+          newsRes.json(),
+          eventsRes.json(),
+          incidentsRes.json(),
+        ]);
 
-        if (!newsData.success) {
-          throw new Error("Invalid news API response format");
+        console.log("Data received:", {
+          news: newsData,
+          events: eventsData,
+          incidents: incidentsData,
+        });
+
+        // Validate response formats
+        if (
+          !newsData.success ||
+          !eventsData.success ||
+          !incidentsData.success
+        ) {
+          throw new Error("Invalid API response format");
         }
 
         // Type check and filter out invalid entries
@@ -148,10 +186,23 @@ export default function AICityChronicle() {
             typeof item.content === "string"
         );
 
+        const validEvents = eventsData.data.filter(
+          (item: any): item is Event =>
+            item &&
+            typeof item.title === "string" &&
+            typeof item.description === "string"
+        );
+
+        const validIncidents = incidentsData.data.filter(
+          (item: any): item is Incident =>
+            item &&
+            typeof item.description === "string" &&
+            typeof item.incidentType === "string"
+        );
+
         setNews(validNews);
-        setEvents([]);
-        setIncidents([]);
-        setBudgets([]);
+        setEvents(validEvents);
+        setIncidents(validIncidents);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -291,7 +342,7 @@ export default function AICityChronicle() {
               </div>
             </div>
             <p className="mt-4 font-light tracking-[0.3em] text-purple-300/70">
-              量子意識の物語
+              量子��識の物語
             </p>
           </div>
         </div>
@@ -581,60 +632,6 @@ export default function AICityChronicle() {
                       <span className="font-light text-purple-400">92%</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Budget Overview */}
-              <Card className="relative overflow-hidden border-purple-500/10 bg-black/40 backdrop-blur-xl">
-                <div className="absolute inset-0 opacity-50">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent" />
-                </div>
-                <CardHeader className="relative">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="font-light text-purple-300/70 tracking-[0.15em]">
-                      予算概要
-                    </CardTitle>
-                    <Building2 className="h-4 w-4 text-purple-400" />
-                  </div>
-                  <CardDescription className="font-light text-purple-300/50">
-                    Department Efficiency
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="relative">
-                  <ScrollArea className="h-[200px] pr-4">
-                    <div className="space-y-4">
-                      {budgets.map((budget) => (
-                        <div key={budget.department} className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="font-light text-purple-300/70">
-                              {budget.department}
-                            </span>
-                            <span className="font-light text-purple-400">
-                              {(budget.efficiency * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-purple-950/50">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-purple-600 to-purple-400 transition-all duration-500"
-                              style={{
-                                width: `${budget.efficiency * 100}%`,
-                                boxShadow: "0 0 10px rgba(168, 85, 247, 0.4)",
-                              }}
-                            />
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-purple-300/50">
-                            <span>
-                              Spent: {(budget.spent / 1000000).toFixed(1)}M
-                            </span>
-                            <span>
-                              Budget:{" "}
-                              {(budget.currentBudget / 1000000).toFixed(1)}M
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>
