@@ -1,6 +1,7 @@
 "use server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://aicity-backend:3001";
 const API_KEY = process.env.BACKEND_API_KEY;
 
 export async function serverAction(

@@ -126,7 +126,7 @@ export function DepartmentsOverview() {
     const fetchCollaborations = async () => {
       try {
         const response = await fetch(
-          "http://localhost:3001/api/collaborations"
+          "http://aicity-backend:3001/api/collaborations"
         );
         if (!response.ok) throw new Error("Failed to fetch collaborations");
         const { data } = await response.json();
