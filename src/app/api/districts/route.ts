@@ -9,7 +9,7 @@ export async function GET() {
           id: "a42ed892-3878-45a5-9a1a-4ceaf9524f1c",
           name: "Downtown District",
           type: "mixed",
-          population: 31000,
+          population: 31002,
           metrics: {
             safety: 0.8,
             cleanliness: 0.7,
