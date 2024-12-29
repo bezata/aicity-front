@@ -17,7 +17,12 @@ interface WebSocketOptions {
   onMessage?: (data: any) => void;
 }
 
-export function useWebSocket(url: string, options: WebSocketOptions = {}) {
+const WS_URL = "wss://backend.neurova.fun/ws";
+
+export function useWebSocket(
+  url: string = WS_URL,
+  options: WebSocketOptions = {}
+) {
   // Connection states
   const [connectionState, setConnectionState] =
     useState<ConnectionState>("disconnected");
@@ -115,7 +120,7 @@ export function useWebSocket(url: string, options: WebSocketOptions = {}) {
     if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     try {
-      const apiKey = process.env.BACKEND_API_KEY;
+      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
       const wsUrl = apiKey ? `${url}?api_key=${apiKey}` : url;
       wsRef.current = new WebSocket(wsUrl);
       setConnectionState("connecting");
@@ -197,6 +202,11 @@ export function useWebSocket(url: string, options: WebSocketOptions = {}) {
             return;
           }
 
+          // Filter out "still no input" messages
+          if (data.content?.includes("*still no input*")) {
+            return;
+          }
+
           // Call the provided message handler
           if (options.onMessage) {
             options.onMessage(data);
@@ -247,12 +257,6 @@ export function useWebSocket(url: string, options: WebSocketOptions = {}) {
     }
 
     return false;
-  }, []);
-
-  // Handle incoming messages
-  const handleMessage = useCallback((data: any) => {
-    // Implement your message handling logic here
-    console.log("Received message:", data);
   }, []);
 
   // Cleanup on unmount
