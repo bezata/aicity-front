@@ -371,7 +371,7 @@ export function ChatRooms() {
     const fetchConversations = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}api/conversations`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/conversations`,
           {
             headers: {
               "Content-Type": "application/json",

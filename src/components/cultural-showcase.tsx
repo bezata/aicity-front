@@ -87,7 +87,7 @@ export function CulturalShowcase() {
 
         // Fetch fresh data first
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}api/culture/popular`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/culture/popular`,
           {
             headers: {
               "Content-Type": "application/json",

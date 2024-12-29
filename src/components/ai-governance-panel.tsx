@@ -61,7 +61,7 @@ export function CityEventsPanel() {
   const fetchDonationGoals = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}api/donations/goals`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/donations/goals`,
         {
           headers: {
             "Content-Type": "application/json",
