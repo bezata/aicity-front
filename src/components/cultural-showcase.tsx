@@ -41,6 +41,98 @@ const typeIcons: { [key: string]: any } = {
   ethnic_celebration: Users,
 };
 
+// Formatting utilities
+const formatLine = (line: string, key: any): React.ReactNode => {
+  if (!line.trim()) return null;
+
+  // Handle bullet points
+  if (line.trim().startsWith("*")) {
+    return (
+      <li key={key} className="text-sm text-purple-300/70 ml-4">
+        {line.replace(/^\s*\*\s*/, "•").trim()}
+      </li>
+    );
+  }
+
+  // Handle numbered lists
+  if (line.trim().match(/^\d+\./)) {
+    return (
+      <li key={key} className="text-sm text-purple-300/70 ml-4">
+        {line.replace(/^\s*\d+\.\s*/, "").trim()}
+      </li>
+    );
+  }
+
+  // Regular text
+  return (
+    <p key={key} className="text-sm text-purple-300/70">
+      {line.trim()}
+    </p>
+  );
+};
+
+const formatDetailedDescription = (description: string): React.ReactNode => {
+  const sections = description
+    .split(/\n(?=\*\*[^*]+\*\*:|###)/)
+    .map((section) => {
+      // Handle section headers
+      if (section.startsWith("**")) {
+        const [header, ...content] = section.split("\n");
+        return (
+          <div key={header} className="mb-6">
+            <h3 className="text-sm font-medium text-purple-300 mb-2">
+              {header.replace(/\*\*/g, "").replace(":", "")}
+            </h3>
+            <div className="space-y-2">
+              {content.map((line, idx) => formatLine(line, idx))}
+            </div>
+          </div>
+        );
+      }
+      // Handle ### headers
+      if (section.startsWith("###")) {
+        const [header, ...content] = section.split("\n");
+        return (
+          <div key={header} className="mb-6">
+            <h3 className="text-sm font-medium text-purple-300 mb-2">
+              {header.replace(/^###\s*/, "")}
+            </h3>
+            <div className="space-y-2">
+              {content.map((line, idx) => formatLine(line, idx))}
+            </div>
+          </div>
+        );
+      }
+      return formatLine(section, section);
+    });
+
+  return <div className="space-y-4">{sections}</div>;
+};
+
+const formatDescription = (description: string): string => {
+  // Get first paragraph before any markdown sections
+  const firstParagraph = description
+    .split(/\n\*\*|\n###/)[0]
+    .replace(/^\*\*[^:]+:\s*/, "") // Remove section headers like "**Cultural Context:**"
+    .replace(/^###\s*/, "") // Remove ### headers
+    .replace(/\*\*/g, "") // Remove any remaining **
+    .replace(/##\s*/, "") // Remove ## headers
+    .replace(/\"|\:/g, "")
+    .trim();
+
+  return firstParagraph;
+};
+
+const formatTitle = (title: string): string => {
+  return title
+    .replace(/^##\s*/, "") // Remove leading ##
+    .replace(/^###\s*/, "") // Remove leading ###
+    .replace(/\*\*/g, "") // Remove **
+    .replace(/\"|\:/g, "")
+    .replace(/Title\:/g, "")
+    .trim();
+};
+
 export function CulturalShowcase() {
   const apiKey = process.env.BACKEND_API_KEY;
   const [culturalItems, setCulturalItems] = useState<CulturalItem[]>([]);
@@ -118,20 +210,6 @@ export function CulturalShowcase() {
 
     fetchCulturalItems();
   }, []);
-
-  const formatDescription = (description: string) => {
-    // Get first paragraph before any bullet points or sections
-    const firstParagraph = description.split("\n")[0];
-    return firstParagraph.replace(/\*\*/g, "").replace(/\"|\:/g, "").trim();
-  };
-
-  const formatTitle = (title: string) => {
-    return title
-      .replace(/\*\*/g, "")
-      .replace(/\"|\:/g, "")
-      .replace(/Title\:/g, "")
-      .trim();
-  };
 
   const gridCols = culturalItems.length <= 2 ? 1 : 2;
   const scrollHeight = culturalItems.length <= 2 ? "h-[300px]" : "h-[600px]";
@@ -236,39 +314,7 @@ export function CulturalShowcase() {
                 </Badge>
               </DialogHeader>
               <div className="space-y-4 mt-4">
-                {selectedItem.description.split("\n").map((line, index) => {
-                  // Handle bullet points
-                  if (line.startsWith("*")) {
-                    return (
-                      <li
-                        key={index}
-                        className="text-sm text-purple-300/70 ml-4"
-                      >
-                        {line.replace("*", "•").trim()}
-                      </li>
-                    );
-                  }
-                  // Handle section headers
-                  if (line.includes("**")) {
-                    return (
-                      <h3
-                        key={index}
-                        className="text-sm font-medium text-purple-300 mt-6"
-                      >
-                        {line.replace(/\*\*/g, "")}
-                      </h3>
-                    );
-                  }
-                  // Regular text
-                  if (line.trim()) {
-                    return (
-                      <p key={index} className="text-sm text-purple-300/70">
-                        {line}
-                      </p>
-                    );
-                  }
-                  return null;
-                })}
+                {formatDetailedDescription(selectedItem.description)}
               </div>
             </>
           )}

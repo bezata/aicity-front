@@ -93,16 +93,27 @@ export function DepartmentProfile() {
     performanceData?.performanceHistory?.slice(0, 3)?.map((record, index) => {
       const cleanDescription = record.description
         .replace(/^[\s\n]*/, "")
-        .replace("Here is the activity description:\n\n", "")
-        .replace(/^\d+\.\s*/, "")
+        .replace(/^\d+[\n\s]*/, "")
+        .replace(/Note:.*$/, "")
+        .replace(/However.*$/, "")
+        .replace(/Here is.*:\n*/g, "")
+        .replace(/\d+\s*\n\n/g, "")
+        .split("\n\n")[0]
         .replace(/\s+/g, " ")
         .trim();
+
+      const finalDescription = cleanDescription
+        .replace(/^\d+\.\s*/, "")
+        .replace(/\s*\d+,\s*\d+,\s*\d+.*$/, "")
+        .replace(/\s*\d+$/, "");
 
       return {
         id: index.toString(),
         type: "update",
         title: "Department Update",
-        description: cleanDescription.slice(0, 200) + "...",
+        description:
+          finalDescription.slice(0, 200) +
+          (finalDescription.length > 200 ? "..." : ""),
         time: formatTimestamp(record.timestamp),
         metrics: record.metrics,
         agentHealth: record.agentHealth,
