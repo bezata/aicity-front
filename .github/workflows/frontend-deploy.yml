@@ -32,21 +32,13 @@ jobs:
         run: |
           ssh ec2 'cd /home/ec2-user/apps/frontend/aicity-front && \
           git pull origin main && \
-          # Check if container exists and stop it
-          if docker ps -q -f name=aicity-front; then
-            echo "Stopping existing container..." && \
-            docker stop aicity-front
-          fi && \
-          # Remove container if it exists (even if stopped)
-          if docker ps -aq -f name=aicity-front; then
-            echo "Removing existing container..." && \
-            docker rm aicity-front
-          fi && \
-          # Remove old images
-          echo "Cleaning up old images..." && \
-          docker image prune -f && \
-          # Build and run new container
           echo "Building new image..." && \
           docker build -t aicity-front . && \
-          echo "Starting new container..." && \
-          docker run --name aicity-front --network aicity-network -p 3000:3000 --env-file .env.local -d aicity-front'
+          echo "Checking if container exists..." && \
+          if docker ps -a --filter name=aicity-front | grep -q aicity-front; then \
+            echo "Restarting existing container..." && \
+            docker restart aicity-front \
+          else \
+            echo "Creating new container..." && \
+            docker run --name aicity-front --network aicity-network -p 3000:3000 --env-file .env.local -d aicity-front \
+          fi'
