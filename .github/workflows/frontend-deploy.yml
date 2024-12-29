@@ -32,8 +32,15 @@ jobs:
         run: |
           ssh ec2 'cd /home/ec2-user/apps/frontend/aicity-front && \
           git pull origin main && \
-          # Force remove the container if it exists
-          docker rm -f aicity-front || echo "No container to remove" && \
+          # Debug - list running containers
+          echo "Currently running containers:" && \
+          docker ps -a | grep aicity-front && \
+          # Stop and force remove the container with extra checks
+          docker stop aicity-front || true && \
+          docker rm -f aicity-front || true && \
+          # Verify container is removed
+          echo "Checking if container still exists:" && \
+          docker ps -a | grep aicity-front || echo "Container successfully removed" && \
           # Remove old images to free up space
           docker image prune -f && \
           # Build and run new container
