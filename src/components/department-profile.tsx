@@ -62,13 +62,7 @@ export function DepartmentProfile() {
     const fetchPerformanceData = async () => {
       try {
         const response = await fetch(
-          `${apiKey}api/departments/economy-dept/performance/history`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              ...(apiKey && { "x-api-key": apiKey }),
-            },
-          }
+          `${apiKey}/api/departments/economy-dept/performance/history`
         );
         const data = await response.json();
         setPerformanceData(data);
