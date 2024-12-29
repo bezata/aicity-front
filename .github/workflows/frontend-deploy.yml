@@ -32,10 +32,13 @@ jobs:
         run: |
           ssh ec2 'cd /home/ec2-user/apps/frontend/aicity-front && \
           git pull origin main && \
-          # Stop and remove any existing containers
-          if docker ps -a | grep -q aicity-front; then
+          # Check if container exists and stop it
+          if docker ps -q -f name=aicity-front; then
             echo "Stopping existing container..." && \
-            docker stop aicity-front && \
+            docker stop aicity-front
+          fi && \
+          # Remove container if it exists (even if stopped)
+          if docker ps -aq -f name=aicity-front; then
             echo "Removing existing container..." && \
             docker rm aicity-front
           fi && \

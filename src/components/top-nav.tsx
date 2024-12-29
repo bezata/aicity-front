@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Brain, Wallet } from "lucide-react";
+import { Brain, Wallet, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppKit } from "@reown/appkit/react";
@@ -21,6 +21,11 @@ const navItems = [
   { name: "Departments", href: "/departments" },
   { name: "Chronicles", href: "/chronicles" },
   { name: "CCTV", href: "/surveillance" },
+  {
+    name: "Docs",
+    href: "https://app.gitbook.com/o/0AFNtCweYdSuewmiTp7p/sites/site_RT4jb",
+    isExternal: true,
+  },
 ];
 
 export function TopNav() {
@@ -31,6 +36,7 @@ export function TopNav() {
   const { walletProvider } = useAppKitProvider<Provider>("solana");
   const [balance, setBalance] = useState(0);
   const [isWalletReady, setIsWalletReady] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkWalletState = async () => {
@@ -63,6 +69,58 @@ export function TopNav() {
     open();
   };
 
+  const renderNavLink = (item: (typeof navItems)[0]) => {
+    const content = (
+      <div className="relative">
+        <span className="relative z-10 text-sm font-light tracking-wide">
+          {item.name}
+        </span>
+        <div className="absolute -inset-x-2 -inset-y-1 -z-10 scale-90 rounded-lg bg-purple-500/0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:bg-purple-500/5 group-hover:opacity-100" />
+      </div>
+    );
+
+    if (item.isExternal) {
+      return (
+        <a
+          key={item.href}
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`
+            group relative px-4 py-2 transition-all duration-300
+            text-purple-300/70 hover:text-purple-300
+          `}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={`
+          group relative px-4 py-2 transition-all duration-300
+          ${
+            pathname === item.href
+              ? "text-purple-300"
+              : "text-purple-300/70 hover:text-purple-300"
+          }
+        `}
+        onClick={() => setIsMobileMenuOpen(false)}
+      >
+        {pathname === item.href && (
+          <div className="absolute inset-0 -z-10">
+            <div className="absolute inset-x-0 -bottom-[1px] h-[1px] bg-purple-500/50 shadow-[0_0_15px_0_rgba(168,85,247,0.4)]" />
+            <div className="absolute inset-0 bg-purple-500/5" />
+          </div>
+        )}
+        {content}
+      </Link>
+    );
+  };
+
   return (
     <header className="fixed left-0 right-0 top-0 z-50 flex h-16 items-center border-b border-white/5 bg-black/50 px-4 backdrop-blur-xl">
       {/* Logo Section */}
@@ -82,36 +140,33 @@ export function TopNav() {
       </div>
 
       <div className="flex flex-1 items-center justify-between px-4">
-        {/* Navigation Links */}
-        <nav className="flex items-center gap-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                group relative px-4 py-2 transition-all duration-300
-                ${
-                  pathname === item.href
-                    ? "text-purple-300"
-                    : "text-purple-300/70 hover:text-purple-300"
-                }
-              `}
-            >
-              {pathname === item.href && (
-                <div className="absolute inset-0 -z-10">
-                  <div className="absolute inset-x-0 -bottom-[1px] h-[1px] bg-purple-500/50 shadow-[0_0_15px_0_rgba(168,85,247,0.4)]" />
-                  <div className="absolute inset-0 bg-purple-500/5" />
-                </div>
-              )}
-              <div className="relative">
-                <span className="relative z-10 text-sm font-light tracking-wide">
-                  {item.name}
-                </span>
-                <div className="absolute -inset-x-2 -inset-y-1 -z-10 scale-90 rounded-lg bg-purple-500/0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:bg-purple-500/5 group-hover:opacity-100" />
-              </div>
-            </Link>
-          ))}
+        {/* Mobile Menu Button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5 text-purple-300" />
+          ) : (
+            <Menu className="h-5 w-5 text-purple-300" />
+          )}
+        </Button>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-1">
+          {navItems.map(renderNavLink)}
         </nav>
+
+        {/* Mobile Navigation */}
+        {isMobileMenuOpen && (
+          <div className="absolute left-0 right-0 top-16 bg-black/95 border-b border-white/5 backdrop-blur-xl lg:hidden">
+            <nav className="flex flex-col py-4">
+              {navItems.map(renderNavLink)}
+            </nav>
+          </div>
+        )}
 
         <div className="flex items-center gap-4">
           {/* Credits & Wallet Section */}
