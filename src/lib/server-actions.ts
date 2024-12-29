@@ -1,7 +1,7 @@
 "use server";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://aicity-backend:3001";
+  process.env.NEXT_PUBLIC_API_URL || "https://backend.neurova.fun";
 const API_KEY = process.env.BACKEND_API_KEY;
 
 export async function serverAction(

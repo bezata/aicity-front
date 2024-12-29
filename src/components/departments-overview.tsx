@@ -126,7 +126,7 @@ export function DepartmentsOverview() {
     const fetchCollaborations = async () => {
       try {
         const response = await fetch(
-          "http://aicity-backend:3001/api/collaborations"
+          "https://backend.neurova.fun/api/collaborations"
         );
         if (!response.ok) throw new Error("Failed to fetch collaborations");
         const { data } = await response.json();
