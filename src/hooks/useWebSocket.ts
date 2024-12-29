@@ -120,9 +120,7 @@ export function useWebSocket(
     if (wsRef.current?.readyState === WebSocket.CONNECTING) return;
 
     try {
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      const wsUrl = apiKey ? `${url}?api_key=${apiKey}` : url;
-      wsRef.current = new WebSocket(wsUrl);
+      wsRef.current = new WebSocket(WS_URL);
       setConnectionState("connecting");
 
       // Set connection timeout

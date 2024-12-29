@@ -90,18 +90,24 @@ export function DepartmentProfile() {
   };
 
   const latestActivities =
-    performanceData?.performanceHistory?.slice(0, 3)?.map((record, index) => ({
-      id: index.toString(),
-      type: "update",
-      title: "Department Update",
-      description:
-        record.description
-          .replace("Here is the activity description:\n\n", "")
-          .slice(0, 200) + "...",
-      time: formatTimestamp(record.timestamp),
-      metrics: record.metrics,
-      agentHealth: record.agentHealth,
-    })) || [];
+    performanceData?.performanceHistory?.slice(0, 3)?.map((record, index) => {
+      const cleanDescription = record.description
+        .replace(/^[\s\n]*/, "")
+        .replace("Here is the activity description:\n\n", "")
+        .replace(/^\d+\.\s*/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      return {
+        id: index.toString(),
+        type: "update",
+        title: "Department Update",
+        description: cleanDescription.slice(0, 200) + "...",
+        time: formatTimestamp(record.timestamp),
+        metrics: record.metrics,
+        agentHealth: record.agentHealth,
+      };
+    }) || [];
 
   return (
     <Card className="border-purple-500/10 bg-black/30 backdrop-blur-xl">
