@@ -56,13 +56,13 @@ export function DepartmentProfile() {
   const [performanceData, setPerformanceData] =
     useState<DepartmentPerformance | null>(null);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const apiKey = process.env.BACKEND_API_KEY;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
   useEffect(() => {
     const fetchPerformanceData = async () => {
       try {
         const response = await fetch(
-          `${apiKey}/api/departments/economy-dept/performance/history`
+          `${apiUrl}/api/departments/economy-dept/performance/history`
         );
         const data = await response.json();
         setPerformanceData(data);
