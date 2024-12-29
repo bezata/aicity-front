@@ -140,7 +140,7 @@ export function DonationModal({
       await walletProvider.signAndSendTransaction(tx, sendOptions);
       const apiKey = process.env.BACKEND_API_KEY;
       // Send backend notification
-      await fetchFromAPI(`${apiUrl}api/donations/simple`, {
+      await fetchFromAPI(`${apiUrl}/api/donations/simple`, {
         method: "POST",
         body: JSON.stringify({
           userId: address,
