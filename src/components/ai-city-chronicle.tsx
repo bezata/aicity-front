@@ -103,7 +103,6 @@ export default function AICityChronicle() {
   const apiKey = process.env.BACKEND_API_KEY;
   const [selectedStory, setSelectedStory] = useState<string | null>(null);
   const [lightningPosition, setLightningPosition] = useState({ x: 50, y: 50 });
-  const [viewCount, setViewCount] = useState<Record<string, number>>({});
   const [resonanceLevel, setResonanceLevel] = useState<Record<string, number>>(
     {}
   );
@@ -285,10 +284,6 @@ export default function AICityChronicle() {
   const handleStoryClick = (storyId: string) => {
     setSelectedStory(storyId === selectedStory ? null : storyId);
     if (storyId !== selectedStory) {
-      setViewCount((prev) => ({
-        ...prev,
-        [storyId]: (prev[storyId] || 0) + 1,
-      }));
       // Simulate resonance level changes
       setResonanceLevel((prev) => ({
         ...prev,
@@ -342,7 +337,7 @@ export default function AICityChronicle() {
               </div>
             </div>
             <p className="mt-4 font-light tracking-[0.3em] text-purple-300/70">
-              量子��識の物語
+              量子意識の物語
             </p>
           </div>
         </div>
@@ -395,15 +390,6 @@ export default function AICityChronicle() {
                               <span>{story.district}</span>
                               <span className="text-purple-300/30">•</span>
                               <span>{story.category}</span>
-                              {viewCount[story.id] && (
-                                <>
-                                  <span className="text-purple-300/30">•</span>
-                                  <div className="flex items-center gap-1">
-                                    <Eye className="h-3 w-3" />
-                                    <span>{viewCount[story.id]}</span>
-                                  </div>
-                                </>
-                              )}
                             </div>
                           </div>
                         </div>
