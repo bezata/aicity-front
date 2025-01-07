@@ -23,7 +23,7 @@ const navItems = [
   { name: "CCTV", href: "/surveillance" },
   {
     name: "Docs",
-    href: "https://app.gitbook.com/o/0AFNtCweYdSuewmiTp7p/sites/site_RT4jb",
+    href: "https://neurova.gitbook.io/docs",
     isExternal: true,
   },
 ];
