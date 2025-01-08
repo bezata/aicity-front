@@ -14,6 +14,8 @@ import {
   type Provider,
 } from "@reown/appkit-adapter-solana/react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import Image from "next/image";
+import logo from './logo.png'
 
 const navItems = [
   { name: "Introduction", href: "/" },
@@ -132,8 +134,13 @@ export function TopNav() {
       {/* Logo Section */}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Brain className="h-6 w-6 text-purple-400" />
-          <div className="absolute -inset-2 -z-10 animate-pulse rounded-full bg-purple-500/20" />
+          <Image
+            src={logo}
+            alt="Neurova Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10"
+          />
         </div>
         <div className="hidden space-y-1 lg:block">
           <h2 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-lg font-light tracking-wider text-transparent">
