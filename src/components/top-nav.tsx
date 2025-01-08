@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Brain, Wallet, Menu, X as XIcon } from "lucide-react";
+import { Brain, Wallet, Menu, X as XIcon, Github } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppKit } from "@reown/appkit/react";
@@ -191,6 +191,14 @@ export function TopNav() {
               className="text-purple-300/70 hover:text-purple-300 transition-colors"
             >
               <XLogo />
+            </a>
+            <a
+              href="https://github.com/NeurovaCity/Neurova"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-300/70 hover:text-purple-300 transition-colors"
+            >
+              <Github className="h-4 w-4" />
             </a>
             {address && (
               <>
