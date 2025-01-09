@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Brain, Wallet, Menu, X } from "lucide-react";
+import { Brain, Wallet, Menu, X as XIcon, Github } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppKit } from "@reown/appkit/react";
@@ -14,6 +14,8 @@ import {
   type Provider,
 } from "@reown/appkit-adapter-solana/react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import Image from "next/image";
+import logo from './logo.png'
 
 const navItems = [
   { name: "Introduction", href: "/" },
@@ -27,6 +29,12 @@ const navItems = [
     isExternal: true,
   },
 ];
+
+const XLogo = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 export function TopNav() {
   const { open } = useAppKit();
@@ -126,8 +134,13 @@ export function TopNav() {
       {/* Logo Section */}
       <div className="flex items-center gap-3">
         <div className="relative">
-          <Brain className="h-6 w-6 text-purple-400" />
-          <div className="absolute -inset-2 -z-10 animate-pulse rounded-full bg-purple-500/20" />
+          <Image
+            src={logo}
+            alt="Neurova Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10"
+          />
         </div>
         <div className="hidden space-y-1 lg:block">
           <h2 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-lg font-light tracking-wider text-transparent">
@@ -148,7 +161,7 @@ export function TopNav() {
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? (
-            <X className="h-5 w-5 text-purple-300" />
+            <XIcon className="h-5 w-5 text-purple-300" />
           ) : (
             <Menu className="h-5 w-5 text-purple-300" />
           )}
@@ -171,6 +184,22 @@ export function TopNav() {
         <div className="flex items-center gap-4">
           {/* Credits & Wallet Section */}
           <div className="hidden items-center gap-4 lg:flex">
+            <a
+              href="https://x.com/NeurovaLabs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-300/70 hover:text-purple-300 transition-colors"
+            >
+              <XLogo />
+            </a>
+            <a
+              href="https://github.com/NeurovaCity/Neurova"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-300/70 hover:text-purple-300 transition-colors"
+            >
+              <Github className="h-4 w-4" />
+            </a>
             {address && (
               <>
                 <div className="flex items-center gap-2">

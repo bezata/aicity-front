@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Cpu, Network, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import logo from './logo.png';
 
 interface SystemCheck {
   id: string;
@@ -130,7 +132,13 @@ export function LoadingScreen() {
           {/* Header */}
           <div className="text-center">
             <div className="relative mb-4 inline-block">
-              <Brain className="h-12 w-12 text-purple-400" />
+              <Image
+                src={logo}
+                alt="Neurova Logo"
+                width={48}
+                height={48}
+                className="h-12 w-12"
+              />
             </div>
             <h1 className="bg-gradient-to-r from-purple-200 via-purple-300 to-purple-400 bg-clip-text text-4xl font-light tracking-wider text-transparent">
               NEUROVA CITY

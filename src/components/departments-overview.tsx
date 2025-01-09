@@ -352,8 +352,7 @@ export function DepartmentsOverview() {
           {departments.map((department) => (
             <Card
               key={department.id}
-              className="border-purple-500/10 bg-black/30 backdrop-blur-xl hover:bg-black/40 transition-colors cursor-pointer"
-              onClick={() => router.push(`/departments/${department.id}`)}
+              className="border-purple-500/10 bg-black/30 backdrop-blur-xl hover:bg-black/40 transition-colors"
             >
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
