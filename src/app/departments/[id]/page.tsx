@@ -90,6 +90,7 @@ export default function Page() {
   }
 
   if (!department) {
+    console.log("Department not found");
     return null;
   }
 
