@@ -218,7 +218,7 @@ export function DepartmentProfile() {
           <div className="flex gap-2">
             <Button
               className="flex-1 gap-2 border border-purple-500/10 bg-purple-500/5 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-              onClick={() => router.push("/economy-dept")}
+              onClick={() => router.push("/departments/economy-dept")}
             >
               View Department
               <ChevronRight className="h-4 w-4" />

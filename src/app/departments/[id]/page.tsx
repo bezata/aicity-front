@@ -54,7 +54,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchDepartment() {
       try {
-        const response = await fetch(`${apiUrl}/api/departments`);
+        const response = await fetch(`${apiUrl}/api/departments/`);
         if (!response.ok) {
           throw new Error(
             `Failed to fetch departments: ${response.statusText}`

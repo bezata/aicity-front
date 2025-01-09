@@ -352,23 +352,26 @@ export function DepartmentsOverview() {
           {departments.map((department) => (
             <Card
               key={department.id}
-              className="border-purple-500/10 bg-black/30 backdrop-blur-xl hover:bg-black/40 transition-colors"
+              className="border-purple-500/10 bg-black/30 backdrop-blur-xl flex flex-col p-6"
             >
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="font-light tracking-wider">
-                    {department.name}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                  >
-                    {department.type.replace(/_/g, " ")}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>{department.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <div className="space-y-6 flex-1">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-light tracking-wider">
+                      {department.name}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                    >
+                      {department.type.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {department.description}
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
@@ -418,7 +421,14 @@ export function DepartmentsOverview() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
+
+              <Button
+                onClick={() => router.push(`/departments/${department.id}`)}
+                className="w-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 backdrop-blur-sm transition-all mt-6"
+              >
+                View Details
+              </Button>
             </Card>
           ))}
         </div>
