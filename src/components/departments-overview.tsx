@@ -261,7 +261,7 @@ export function DepartmentsOverview() {
                       axisLine={false}
                     />
                     <Bar
-                      name="Budget (M NRA)"
+                      name="Budget (M NEUROVA)"
                       dataKey="budget"
                       fill="hsl(var(--primary))"
                       radius={[4, 4, 0, 0]}
@@ -371,7 +371,6 @@ export function DepartmentsOverview() {
                 {department.description}
               </p>
             </div>
-
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
@@ -432,7 +431,6 @@ export function DepartmentsOverview() {
         </Card>
       ))}
     </div>
-
         {selectedSession && (
           <SessionViewer
             session={selectedSession}

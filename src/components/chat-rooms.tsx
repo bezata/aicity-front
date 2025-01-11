@@ -738,9 +738,9 @@ export function ChatRooms() {
                       </div>
                       <div className="flex items-center justify-between text-xs text-purple-300/50">
                         <span>
-                          {project.currentAmount.toLocaleString()} NRA
+                          {project.currentAmount.toLocaleString()} NEUROVA
                         </span>
-                        <span>{project.targetAmount.toLocaleString()} NRA</span>
+                        <span>{project.targetAmount.toLocaleString()} NEUROVA</span>
                       </div>
                     </div>
 
