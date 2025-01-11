@@ -261,7 +261,7 @@ export function DepartmentsOverview() {
                       axisLine={false}
                     />
                     <Bar
-                      name="Budget (M NRA)"
+                      name="Budget (M NEUROVA)"
                       dataKey="budget"
                       fill="hsl(var(--primary))"
                       radius={[4, 4, 0, 0]}
@@ -389,8 +389,8 @@ export function DepartmentsOverview() {
                     className="h-2 bg-purple-500/10"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{department.budget.spent.toLocaleString()} NRA</span>
-                    <span>{department.budget.total.toLocaleString()} NRA</span>
+                    <span>{department.budget.spent.toLocaleString()} NEUROVA</span>
+                    <span>{department.budget.total.toLocaleString()} NEUROVA</span>
                   </div>
                 </div>
 

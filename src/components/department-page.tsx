@@ -178,11 +178,11 @@ export function DepartmentPage({ department }: DepartmentPageProps) {
                   />
                   <div className="flex items-center justify-between text-sm text-purple-300/50">
                     <span>
-                      {department.budget.allocated.toLocaleString()} NRA
+                      {department.budget.allocated.toLocaleString()} NEUROVA
                       allocated
                     </span>
                     <span>
-                      {department.budget.total.toLocaleString()} NRA total
+                      {department.budget.total.toLocaleString()} NEUROVA total
                     </span>
                   </div>
                 </div>

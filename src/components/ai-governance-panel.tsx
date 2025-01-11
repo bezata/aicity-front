@@ -213,9 +213,9 @@ export function CityEventsPanel() {
                         />
                         <div className="flex items-center justify-between text-xs text-purple-300/50">
                           <span>
-                            {event.currentAmount.toLocaleString()} NRA
+                            {event.currentAmount.toLocaleString()} NEUROVA
                           </span>
-                          <span>{event.targetAmount.toLocaleString()} NRA</span>
+                          <span>{event.targetAmount.toLocaleString()} NEUROVA</span>
                         </div>
                       </div>
 
