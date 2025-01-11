@@ -349,79 +349,89 @@ export function DepartmentsOverview() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {departments.map((department) => (
-            <Card
-              key={department.id}
-              className="border-purple-500/10 bg-black/30 backdrop-blur-xl hover:bg-black/40 transition-colors"
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="font-light tracking-wider">
-                    {department.name}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="border-purple-400/30 bg-purple-500/10 text-purple-300"
-                  >
-                    {department.type.replace(/_/g, " ")}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>{department.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Budget Progress
-                    </span>
-                    <span>
-                      {Math.round(
-                        (department.budget.spent / department.budget.total) *
-                          100
-                      )}
-                      %
-                    </span>
-                  </div>
-                  <Progress
-                    value={
-                      (department.budget.spent / department.budget.total) * 100
-                    }
-                    className="h-2 bg-purple-500/10"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{department.budget.spent.toLocaleString()} NRA</span>
-                    <span>{department.budget.total.toLocaleString()} NRA</span>
-                  </div>
-                </div>
+      {departments.map((department) => (
+        <Card
+          key={department.id}
+          className="border-purple-500/10 bg-black/30 backdrop-blur-xl flex flex-col p-6"
+        >
+          <div className="space-y-6 flex-1">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-light tracking-wider">
+                  {department.name}
+                </span>
+                <Badge
+                  variant="outline"
+                  className="border-purple-400/30 bg-purple-500/10 text-purple-300"
+                >
+                  {department.type.replace(/_/g, " ")}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {department.description}
+              </p>
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      Active Agents
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-medium">
-                        {department.assignedAgents.length}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground">
-                      Response Time
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-medium">
-                        {Math.round(department.metrics.responseTime * 100)}%
-                      </span>
-                    </div>
-                  </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Budget Progress
+                </span>
+                <span>
+                  {Math.round(
+                    (department.budget.spent / department.budget.total) *
+                      100
+                  )}
+                  %
+                </span>
+              </div>
+              <Progress
+                value={
+                  (department.budget.spent / department.budget.total) * 100
+                }
+                className="h-2 bg-purple-500/10"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{department.budget.spent.toLocaleString()} NRA</span>
+                <span>{department.budget.total.toLocaleString()} NRA</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Active Agents
+                </p>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-400" />
+                  <span className="text-sm font-medium">
+                    {department.assignedAgents.length}
+                  </span>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  Response Time
+                </p>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-purple-400" />
+                  <span className="text-sm font-medium">
+                    {Math.round(department.metrics.responseTime * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => router.push(`/departments/${department.id}`)}
+            className="w-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 backdrop-blur-sm transition-all mt-6"
+          >
+            View Details
+          </Button>
+        </Card>
+      ))}
+    </div>
 
         {selectedSession && (
           <SessionViewer

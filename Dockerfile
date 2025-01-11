@@ -15,11 +15,16 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts && \
-    npm rebuild usb --build-from-source
+    npm rebuild usb --build-from-source && \
+    npm install sharp
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Create and set permissions for .next directory
+RUN mkdir -p .next/cache && \
+    chmod -R 777 .next
 
 # Ensure public directory exists
 RUN mkdir -p public
@@ -41,14 +46,32 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Install build dependencies and Linux headers
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    linux-headers \
+    udev \
+    eudev-dev \
+    libc6-compat
+
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs && \
-    mkdir -p public
+    mkdir -p public && \
+    mkdir -p .next/cache && \
+    chown -R nextjs:nodejs .next
 
 # Copy built application
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package*.json ./
+
+# Install only production dependencies
+RUN npm ci --omit=dev --ignore-scripts && \
+    npm rebuild usb --build-from-source
 
 # Copy environment files to runtime
 COPY --from=builder /app/.env.local ./.env.local

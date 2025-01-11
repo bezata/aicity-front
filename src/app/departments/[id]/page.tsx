@@ -54,12 +54,15 @@ export default function Page() {
   useEffect(() => {
     async function fetchDepartment() {
       try {
-        const response = await fetch(`${apiUrl}/api/departments`);
+        const response = await fetch(`${apiUrl}/api/departments/`);
         if (!response.ok) {
+
           throw new Error(
             `Failed to fetch departments: ${response.statusText}`
           );
+          
         }
+        console.log(response);
 
         const departments = await response.json();
         const dept = departments.find((d: Department) => d.id === params.id);
