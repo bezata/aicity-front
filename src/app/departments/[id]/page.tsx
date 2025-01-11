@@ -50,13 +50,11 @@ export default function Page() {
   const params = useParams();
   const [department, setDepartment] = useState<Department | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   useEffect(() => {
     async function fetchDepartment() {
       try {
-        const response = await fetch(
-          "process.env.BACKEND_API_URLapi/departments"
-        );
+        const response = await fetch(`${apiUrl}/api/departments/`);
         if (!response.ok) {
           throw new Error(
             `Failed to fetch departments: ${response.statusText}`
@@ -92,6 +90,7 @@ export default function Page() {
   }
 
   if (!department) {
+    console.log("Department not found");
     return null;
   }
 
